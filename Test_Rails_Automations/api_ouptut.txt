@@ -1,0 +1,2437 @@
+{'_links': {'next': None, 'prev': None},
+ 'limit': 0,
+ 'offset': 0,
+ 'results': [{'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775582435,
+              'custom_desired_results': None,
+              'custom_location': 5,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Turn on high voltage and '
+                                                  'prepare the robot to run '
+                                                  'workflow',
+                                       'expected': 'Robot is in HV',
+                                       'refs': '',
+                                       'status_id': '3'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Begin workflow via the SWI. '
+                                                  'Record the start time of '
+                                                  'the run. As stretch begins '
+                                                  'moving boxes, keep count of '
+                                                  'how many have been '
+                                                  'successfully unloaded.\n'
+                                                  '\n'
+                                                  '\n'
+                                                  '\n'
+                                                  'Optional: begin a screen '
+                                                  'recording to capture swi',
+                                       'expected': '**Actual number of '
+                                                   'unloaded boxes** and '
+                                                   '**time since workflow '
+                                                   'began** should match the '
+                                                   'on-screen metrics.',
+                                       'refs': '',
+                                       'status_id': '3'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Begin a stopwatch after '
+                                                  'stretch drops off a box '
+                                                  'onto the conveyor and '
+                                                  'record the time it takes to '
+                                                  'unload 20 additional boxes '
+                                                  '(stop the stopwatch right '
+                                                  'after 20th box has been '
+                                                  'placed onto the conveyor) '
+                                                  'and record the SWI screen '
+                                                  'to capture the Window CPH.\n'
+                                                  '\n'
+                                                  'Note: The total case count '
+                                                  'must be 21 or more boxes.  '
+                                                  'If more that 21 boxes are '
+                                                  'moved, take the time from '
+                                                  'when the box 20 before that '
+                                                  'was placed.  If 20 or fewer '
+                                                  'boxes are placed the CPH '
+                                                  'calculation shown live on '
+                                                  'SWI will include startup '
+                                                  'time from when the workflow '
+                                                  'started.  \n'
+                                                  ' '
+                                                  '![](index.php?/attachments/get/cb259d40-3e0e-4af5-b926-3e5296ca350f) \n',
+                                       'expected': 'Stopwatch was started, '
+                                                   'User counted 20 boxes and '
+                                                   'took note of the time and '
+                                                   'window cph at the 20 boxes '
+                                                   'place-to-places cycles\n'
+                                                   '\n'
+                                                   'Note: The live '
+                                                   '&ldquo;cases per '
+                                                   'hour&rdquo; on the SWI '
+                                                   'unloading page is going to '
+                                                   'omit the startup / facade '
+                                                   'scan time once 21 total '
+                                                   'cases are placed, so it '
+                                                   'will be a higher CPH than '
+                                                   'the CPH shown at the end '
+                                                   'of the workflow.  \n',
+                                       'refs': '',
+                                       'status_id': '3'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Divide 20 boxes by total '
+                                                  'number of seconds. Multiply '
+                                                  'that number by 3600 (number '
+                                                  'of seconds in an hour) to '
+                                                  'get a rough calculation of '
+                                                  'CPH.\n'
+                                                  '\n'
+                                                  '\n'
+                                                  '\n'
+                                                  'Note: \n'
+                                                  'This calculation is a '
+                                                  'windowed CPH over the last '
+                                                  '5 min.\n'
+                                                  'If the 20 boxes take longer '
+                                                  'than 5 mins note the amount '
+                                                  'of boxes moved in that time '
+                                                  'frame and multiply by 12 to '
+                                                  'get the rolling window '
+                                                  'CPH\n',
+                                       'expected': 'Verify your **Calculated '
+                                                   '20 box placement window '
+                                                   'cph or the Calculated 5min '
+                                                   'Window CPH** is reasonably '
+                                                   'close to the on-screen '
+                                                   'metrics.',
+                                       'refs': '',
+                                       'status_id': '3'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': "'Pause' and 'Resume' the "
+                                                  'workflow.',
+                                       'expected': 'Metrics should not reset. '
+                                                   "'Elapsed Time' metric "
+                                                   'should include time during '
+                                                   'pause.',
+                                       'refs': '',
+                                       'status_id': '3'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Turn the RTE key and then '
+                                                  'wait for the robot to stop. '
+                                                  'Wait 2 minutes. Resume the '
+                                                  'robot',
+                                       'expected': 'Metrics should not reset. '
+                                                   "'Elapsed Time' metric "
+                                                   'should include time during '
+                                                   'pause.',
+                                       'refs': '',
+                                       'status_id': '3'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Press the E-stop on the '
+                                                  'zone controller,wait 2 '
+                                                  'minutes, then clear faults '
+                                                  'and resume workflow',
+                                       'expected': 'Metrics should not reset. '
+                                                   "'Elapsed Time' metric "
+                                                   'should include time during '
+                                                   'pause.',
+                                       'refs': '',
+                                       'status_id': '3'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': "'Pause' and 'Exit' the "
+                                                  'workflow to the home page '
+                                                  'of SWI. Begin a new '
+                                                  'workflow.',
+                                       'expected': 'Metrics should all be '
+                                                   'reset to 0.',
+                                       'refs': '',
+                                       'status_id': '3'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154148,
+              'status_id': 6,
+              'test_id': 238238,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775487557,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Log into the SWI on the '
+                                                  'robot as "BD" user',
+                                       'expected': 'Login to the robot SWI.\n'
+                                                   'Once logged in you should '
+                                                   'have access to the '
+                                                   'following SWI menu options '
+                                                   'that were not available '
+                                                   'when logged out:\n'
+                                                   '-BD Settings\n'
+                                                   '-Manual Behaviors\n'
+                                                   '-Diagnostics\n'
+                                                   '-Autonomy\n'
+                                                   '-Power',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Navigate to the "Manual '
+                                                  'Behaviors" menu and scroll '
+                                                  'down to the "FAT Checks '
+                                                  '&gt; FAT Burn in" drop down '
+                                                  'as shown in the image '
+                                                  'below. From here run the '
+                                                  '"BURN_IN_AGGRESSIVE_RUMBLE_STRIP_DRIVING" '
+                                                  'behavior for 5 minutes. '
+                                                  'This should give enough '
+                                                  'time for the behavior to '
+                                                  'run through at least 2 '
+                                                  'cycles of its movements.\n'
+                                                  '\n'
+                                                  '\n'
+                                                  ' '
+                                                  '![](index.php?/attachments/get/fe875359-2777-477a-82ba-95951902cb9c)',
+                                       'expected': '-Robot should cycle '
+                                                   'through behaviors without '
+                                                   'failure\n'
+                                                   '-SWI should show state of '
+                                                   'test run and time '
+                                                   'remaining',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154067,
+              'status_id': 1,
+              'test_id': 238256,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775487538,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Log into the SWI on the '
+                                                  'robot as "BD" user ',
+                                       'expected': 'Login to the robot SWI.\n'
+                                                   'Once logged in you should '
+                                                   'have access to the '
+                                                   'following SWI menu options '
+                                                   'that were not available '
+                                                   'when logged out:\n'
+                                                   '-BD Settings\n'
+                                                   '-Manual Behaviors\n'
+                                                   '-Diagnostics\n'
+                                                   '-Autonomy\n'
+                                                   '-Power',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Navigate to the "Manual '
+                                                  'Behaviors" menu and scroll '
+                                                  'down to the "FAT Checks '
+                                                  '&gt; FAT Burn in" drop down '
+                                                  'as shown in the image '
+                                                  'below. From here run the '
+                                                  '"BURN_IN_AGGRESSIVE_FULL_SYSTEM_EXERCISE" '
+                                                  'behavior for 10 minutes. '
+                                                  'This should give enough '
+                                                  'time for each behavior to '
+                                                  'run at least once.\n'
+                                                  '\n'
+                                                  '\n'
+                                                  ' '
+                                                  '![](index.php?/attachments/get/f2621653-6cd1-4fa5-8fe7-6ac789142b2f)',
+                                       'expected': '-Robot should cycle '
+                                                   'through behaviors without '
+                                                   'failure\n'
+                                                   '-SWI should show state of '
+                                                   'test run and time '
+                                                   'remaining',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154066,
+              'status_id': 1,
+              'test_id': 238254,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': ['554e6118-1cac-43aa-92aa-b5f7f241374d'],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775487506,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Connect to Zone Controller '
+                                                  'and turn on High Voltage',
+                                       'expected': 'Robot is in HV',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Sign in to bd user, open '
+                                                  'hamburger menu -&gt; '
+                                                  'Diagnostics -&gt; Service '
+                                                  'Behaviors',
+                                       'expected': 'User sees a full list of '
+                                                   'service behaviors',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': 'Combined Camera Check Failed '
+                                                 'with only the camera cal '
+                                                 'check failing '
+                                                 '![](index.php?/attachments/get/8218c51c-e9cb-4ca2-8813-0573387a2a5a)',
+                                       'additional_info': '',
+                                       'content': 'Navigate to Service '
+                                                  'Behaviors -&gt; Health '
+                                                  'Checks -&gt; Full Robot '
+                                                  'Checkout\n'
+                                                  '  '
+                                                  '![](index.php?/attachments/get/99a0d6e7-f1f2-4d71-8e9f-426a1c471f0d) \n'
+                                                  '\n'
+                                                  'Full list of behaviors and '
+                                                  'Button location can be seen '
+                                                  'here\n'
+                                                  ' '
+                                                  '![](index.php?/attachments/get/703b2edf-791a-44c2-9c76-cc75009c5f61) \n',
+                                       'expected': 'A log should automatically '
+                                                   'begin . "Full Robot '
+                                                   'Checkout" should run '
+                                                   'through "Encoder Check '
+                                                   'Arm, Encoder Check Mast, '
+                                                   'Encoder Check Swerves, '
+                                                   'Camera Flash Check, Dirty '
+                                                   'Lens Check, Camera Focus '
+                                                   'Check, Camera Cal Check, '
+                                                   'Wrench Sensor Check, Base '
+                                                   'Ground Check, TOF, '
+                                                   'Solenoid Health Check" '
+                                                   'with a window showing its '
+                                                   'progress',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'When complete, a result '
+                                                  'window will appear\n'
+                                                  ' \n',
+                                       'expected': 'Results window will appear '
+                                                   'and show whether all '
+                                                   'individual checks passed '
+                                                   'or failed\n'
+                                                   '\n'
+                                                   ' '
+                                                   '![](index.php?/attachments/get/01551eda-27ff-4a22-879b-a8f3bf3122e5)   \n'
+                                                   '\n'
+                                                   'If there are individual '
+                                                   'checks that failed, write '
+                                                   'tickets for each and '
+                                                   'attach it to the test '
+                                                   'result',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154065,
+              'status_id': 1,
+              'test_id': 238241,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': 'Ticket: '
+                         'https://bostondynamics.atlassian.net/browse/STRE-59473',
+              'created_by': 441,
+              'created_on': 1775484621,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'open diagnostics page of '
+                                                  'stretch',
+                                       'expected': 'page is open',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': 'Robot failed to complete the '
+                                                 'Torque test',
+                                       'additional_info': '',
+                                       'content': 'execute arm torque ell '
+                                                  'calibration \n'
+                                                  ' '
+                                                  '![](index.php?/attachments/get/e773f639-8ad7-469c-bb1f-2bc11d38655c)',
+                                       'expected': 'the healtcheck should '
+                                                   'pass.',
+                                       'refs': '',
+                                       'status_id': '5'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Hard power cycle robot',
+                                       'expected': '\t\n'
+                                                   'robot reboots, Robot is '
+                                                   'calibrated.',
+                                       'refs': '',
+                                       'status_id': '2'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154063,
+              'status_id': 5,
+              'test_id': 238253,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': 'Ticket: '
+                         'https://bostondynamics.atlassian.net/browse/STRE-59473',
+              'created_by': 441,
+              'created_on': 1775482823,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'While on current master '
+                                                  'release, install '
+                                                  'SQA/Customer release using '
+                                                  'customer settings / '
+                                                  'software update page.\n'
+                                                  '\n'
+                                                  ' '
+                                                  '![](index.php?/attachments/get/432cf4b9-24b6-485c-9c99-61b76dde91e0) ',
+                                       'expected': '\n'
+                                                   'Robot reboots without any '
+                                                   'faults\n'
+                                                   '  \n'
+                                                   'Note: Refresh the SWI '
+                                                   'after the '
+                                                   'install/reboot  \n',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Go back to the customer '
+                                                  'settings / software update '
+                                                  'page.\n',
+                                       'expected': 'User will see the '
+                                                   'SQA/Customer release under '
+                                                   '**Current Software**, and '
+                                                   'see the current master '
+                                                   'release under **Previously '
+                                                   'Installed Software**\n'
+                                                   ' '
+                                                   '![](index.php?/attachments/get/0648f9ec-4747-456d-a307-de0b86455563) \n'
+                                                   '\n'
+                                                   "Note: Can't guarantee "
+                                                   'future versions will '
+                                                   'display correctly on '
+                                                   'downgrade, so odd '
+                                                   'name/version string '
+                                                   'display is acceptable',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'go through truck unload '
+                                                  'sequence (without starting '
+                                                  'unload).\n'
+                                                  '~Connect to a zone and go '
+                                                  'HV, but do not start '
+                                                  'unload~',
+                                       'expected': 'Robot is on SQA/Customer '
+                                                   'release and is ready to '
+                                                   'start unload.\n'
+                                                   '\n'
+                                                   '\n',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': 'After reverting back to the '
+                                                 'master build, the robot was '
+                                                 'not able to completly reboot '
+                                                 'and was stuck rebooting the '
+                                                 'SCO module and the Conductor '
+                                                 'module.',
+                                       'additional_info': '',
+                                       'content': 'Go back to the customer '
+                                                  'settings / software update '
+                                                  'page, use rollback button '
+                                                  'to switch back to master\n'
+                                                  ' '
+                                                  '![](index.php?/attachments/get/42123144-0f18-45dd-91fb-29bb5a9fb6fb)',
+                                       'expected': 'Robot reboots without any '
+                                                   'bootup faults. ',
+                                       'refs': '',
+                                       'status_id': '5'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Go back to the customer '
+                                                  'settings / software update '
+                                                  'page.',
+                                       'expected': 'User will see the current '
+                                                   'master release under '
+                                                   '**Current Software**, and '
+                                                   'see the SQA/Customer '
+                                                   'release under **Previously '
+                                                   'Installed Software**\n'
+                                                   '\n'
+                                                   "Note: Can't guarantee "
+                                                   'future versions will '
+                                                   'display correctly on '
+                                                   'downgrade, so odd '
+                                                   'name/version string '
+                                                   'display is acceptable\n',
+                                       'refs': '',
+                                       'status_id': '2'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'go through truck unload '
+                                                  'sequence (without starting '
+                                                  'unload).\n'
+                                                  '~Connect to a zone and go '
+                                                  'HV, but do not start '
+                                                  'unload~',
+                                       'expected': 'Robot is on Master release '
+                                                   'and is ready to start '
+                                                   'unload.\n',
+                                       'refs': '',
+                                       'status_id': '2'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154062,
+              'status_id': 5,
+              'test_id': 238259,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775481033,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Log into the robot. Once '
+                                                  'logged in navigate to the '
+                                                  'diagnostics tab',
+                                       'expected': '',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Click on the play button '
+                                                  'and run the "Platform '
+                                                  'Robustness Tests"\n'
+                                                  ' '
+                                                  '![](index.php?/attachments/get/a063bb00-90c4-4db3-9791-26056920b0da)',
+                                       'expected': 'Tests should execute and '
+                                                   'they should pass\n'
+                                                   ' '
+                                                   '![](index.php?/attachments/get/5e4feee7-f086-4008-906f-2a2260ac1f6c) \n',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154061,
+              'status_id': 1,
+              'test_id': 238260,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775481007,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'ssh -A bd@[robot-name]',
+                                       'expected': '\n'
+                                                   ' '
+                                                   '![](index.php?/attachments/get/0a373725-72a0-49f0-8b4a-77a6cf9d6c9a) ',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154060,
+              'status_id': 1,
+              'test_id': 238258,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775480974,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Power on robot and connect '
+                                                  'it to the zone controller. '
+                                                  'Bring robot to HV. Attempt '
+                                                  'to begin workflow (but do '
+                                                  'not actually begin '
+                                                  'workflow).\n'
+                                                  '\n',
+                                       'expected': 'Operator should be able to '
+                                                   'bring robot to HV and '
+                                                   'begin workflow (SWI has no '
+                                                   'faults).',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'RTE in and with the robot '
+                                                  'not in high voltage, plug '
+                                                  'in a pendant and pendant '
+                                                  'drive the robot.',
+                                       'expected': '**If you are on Stretch '
+                                                   'Gen2**\n'
+                                                   'Robot will disconnect from '
+                                                   'the zone after pendant is '
+                                                   'attached\n'
+                                                   '\n'
+                                                   'Robot has been pendant '
+                                                   'driven',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Unplug the pendant. On the '
+                                                  'SWI, attempt to begin '
+                                                  'workflow again.',
+                                       'expected': 'SWI will show the robot is '
+                                                   'not connected to a zone '
+                                                   'controller. User will be '
+                                                   'unable to start running '
+                                                   'until a zone is entered '
+                                                   'again',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Reconnect robot to the zone '
+                                                  'controller. Bring robot to '
+                                                  'HV. Attempt to begin '
+                                                  'workflow (but do not '
+                                                  'actually begin workflow).',
+                                       'expected': 'Operator should be able to '
+                                                   'bring robot to HV and '
+                                                   'begin workflow (SWI has no '
+                                                   'faults).',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154059,
+              'status_id': 1,
+              'test_id': 238250,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775480945,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Attach pendant to robot,\n'
+                                                  '**If you are on Stretch '
+                                                  'Gen1:**\n'
+                                                  'Cycle the E-Stop\n'
+                                                  '\n'
+                                                  '**If you are on Stretch '
+                                                  'Gen2:**\n'
+                                                  'No need to cycle the '
+                                                  'E-Stop\n'
+                                                  '\n'
+                                                  'Hold down the deadman '
+                                                  'switch to start movement.',
+                                       'expected': 'Robot is able to move',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Drive robot forwards and '
+                                                  'release deadman switch',
+                                       'expected': 'Robot stops',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Hold down the deadman '
+                                                  'switch to start movement.',
+                                       'expected': 'Robot is able to move.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Turn/rotate robot and '
+                                                  'release deadman switch',
+                                       'expected': 'Robot stops',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154058,
+              'status_id': 1,
+              'test_id': 238252,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775480889,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Attach pendant to robot, '
+                                                  'and press the e-stop on the '
+                                                  'base of robot. \n'
+                                                  '\n'
+                                                  'Engage the yellow 3PE '
+                                                  'switch to the middle '
+                                                  'position to drive the '
+                                                  'robot.\n'
+                                                  '\n'
+                                                  '\n',
+                                       'expected': 'Robot is unable to be '
+                                                   'pendant driven due to the '
+                                                   'e-stop.\n'
+                                                   '\n',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Cycle the e-stop (unpress '
+                                                  'it).\n'
+                                                  '\n'
+                                                  'Follow the Pendant UI '
+                                                  'prompts -  Press, release '
+                                                  'and then engage the yellow '
+                                                  '3PE switch to the middle '
+                                                  'position to drive the '
+                                                  'robot\n',
+                                       'expected': 'Robot is able to move',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Release the yellow 3PE '
+                                                  'switch',
+                                       'expected': 'Robot stops moving',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': '\n'
+                                                  'Engage the yellow 3PE '
+                                                  'switch to the middle '
+                                                  'position to drive the '
+                                                  'robot.\n'
+                                                  '\n'
+                                                  'While driving forward, '
+                                                  'press the e-stop on the '
+                                                  'base of the robot\n'
+                                                  '\n'
+                                                  '\n',
+                                       'expected': 'The robot stops movement '
+                                                   'and the pendant shows a '
+                                                   '"cycle e-stop screen"',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154057,
+              'status_id': 1,
+              'test_id': 238251,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775480861,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Power on the robot and plug '
+                                                  'in the pendant.',
+                                       'expected': 'Robot is on and pendant is '
+                                                   'attached to the robot.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': '**If you are on Stretch '
+                                                  'Gen1:**\n'
+                                                  'Cycle the E-Stop\n'
+                                                  '\n'
+                                                  '**If you are on Stretch '
+                                                  'Gen2:**\n'
+                                                  'No need to cycle the '
+                                                  'E-Stop\n'
+                                                  '\n',
+                                       'expected': '**If you are on Stretch '
+                                                   'Gen1:**\n'
+                                                   'E-Stop cycled\n'
+                                                   '\n'
+                                                   '**If you are on Stretch '
+                                                   'Gen2:**\n'
+                                                   'No E-Stop Cycled needed\n',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Without holding the safety '
+                                                  'switch, push and hold the '
+                                                  'LEFT joystick so that it is '
+                                                  'not centered. ',
+                                       'expected': 'Left joystick is not '
+                                                   'centered.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Engage the safety switch '
+                                                  '(with the joystick still '
+                                                  'not centered).',
+                                       'expected': 'Pendant should not allow '
+                                                   'the robot to drive and '
+                                                   'display should inform the '
+                                                   'operator to center the '
+                                                   'joysticks.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Release the joystick and '
+                                                  'the safety switch. Push and '
+                                                  'hold the RIGHT joystick so '
+                                                  'that it is not centered. ',
+                                       'expected': 'Right Joy stick is not '
+                                                   'centered.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Engage the safety switch '
+                                                  '(with the joystick still '
+                                                  'not centered).',
+                                       'expected': 'Pendant should not allow '
+                                                   'the robot to drive and '
+                                                   'display should inform the '
+                                                   'operator to center the '
+                                                   'joysticks.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Release the joystick and '
+                                                  'the safety switch. '
+                                                  'Re-engage the safety '
+                                                  'switch. Attempt to drive '
+                                                  'the robot.',
+                                       'expected': 'Robot should move.',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154056,
+              'status_id': 1,
+              'test_id': 238249,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775480835,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Power on the robot and plug '
+                                                  'in the pendant. \n'
+                                                  '\n'
+                                                  '**For Stretch Gen1**\n'
+                                                  'Cycle the Estop',
+                                       'expected': 'Pendant is plugged in and '
+                                                   'user is following prompts',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Without pressing the safety '
+                                                  'switch, try moving the '
+                                                  'robot by pushing a '
+                                                  'joystick.\n',
+                                       'expected': 'Robot should not move.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Press the safety switch as '
+                                                  'far down as it is able '
+                                                  '(deadman switch). Try '
+                                                  'moving the robot by pushing '
+                                                  'a joystick.',
+                                       'expected': 'Robot should not move.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Release the Safety switch',
+                                       'expected': 'User released Safety '
+                                                   'switch',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Push the Safety Switch all '
+                                                  'the way in and then '
+                                                  'slightly release the safety '
+                                                  "switch so that it's in the "
+                                                  'middle. Try moving the '
+                                                  'robot by pushing a '
+                                                  'joystick.',
+                                       'expected': 'Robot should not move.',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154055,
+              'status_id': 1,
+              'test_id': 238248,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775480808,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Attach pendant to '
+                                                  'stretch, \n'
+                                                  '\n'
+                                                  '**If you are on Stretch '
+                                                  'Gen1:**\n'
+                                                  'Record the time it takes to '
+                                                  'finish startup of the '
+                                                  'pendant and show the "Cycle '
+                                                  'E-Stop" screen.\n'
+                                                  '\n'
+                                                  '**If you are on Stretch '
+                                                  'Gen2:**\n'
+                                                  'Record the time it takes to '
+                                                  'finish startup of the '
+                                                  'pendant and show the main '
+                                                  'pendant operating screen\n'
+                                                  '\n'
+                                                  '\n'
+                                                  '\n',
+                                       'expected': '**If you are on Stretch '
+                                                   'Gen1:**\n'
+                                                   'Pendant should take no '
+                                                   'longer than 10 seconds to '
+                                                   'have finished start up and '
+                                                   'show the "Cycle E-Stop" '
+                                                   'screen.\n'
+                                                   '\n'
+                                                   '\n'
+                                                   '**If you are on Stretch '
+                                                   'Gen2:**\n'
+                                                   'Pendant should take no '
+                                                   'longer than 10 seconds to '
+                                                   'have finished start up \n',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': '**If you are on Stretch '
+                                                  'Gen1:**\n'
+                                                  'Cycle the estop on the '
+                                                  'robot\n'
+                                                  '\n'
+                                                  '**If you are on Stretch '
+                                                  'Gen2:**\n'
+                                                  'Skip - estop Cycle not '
+                                                  'needed',
+                                       'expected': '**If you are on Stretch '
+                                                   'Gen1:**\n'
+                                                   'robots estop has been '
+                                                   'cycled\n'
+                                                   '\n'
+                                                   '**If you are on Stretch '
+                                                   'Gen2:**\n'
+                                                   'Skip - estop Cycle not '
+                                                   'needed\n',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': '**If you are on Stretch '
+                                                  'Gen1:**\t\n'
+                                                  'Push the deadman switch to '
+                                                  'the middle position and '
+                                                  'release\n'
+                                                  '\n'
+                                                  '**If you are on Stretch '
+                                                  'Gen2:**\n'
+                                                  'Press and hold deadman '
+                                                  'switch to the middle '
+                                                  'position\n',
+                                       'expected': '**If you are on Stretch '
+                                                   'Gen1:**\n'
+                                                   'Screen will say '
+                                                   '&lsquo;Release&rsquo; when '
+                                                   'deadman&rsquo;s switch is '
+                                                   'pressed to the middle '
+                                                   'position, and when '
+                                                   'released, screen will read '
+                                                   '&lsquo;Hold Switch\n'
+                                                   '\n'
+                                                   '**If you are on Stretch '
+                                                   'Gen2:**\n'
+                                                   'Once the deadman is '
+                                                   'pressed, robot should be '
+                                                   'able to move within 1 '
+                                                   'second.\n'
+                                                   'User should hear a click '
+                                                   'of the brakes release.\n'
+                                                   '\n',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': '**For Stretch Gen1 only**\n'
+                                                  'Hold down the deadman '
+                                                  'switch in the middle '
+                                                  'position to start '
+                                                  'movement.\n',
+                                       'expected': '**For Stretch Gen1 only**\n'
+                                                   'Once the deadman is '
+                                                   'pressed, robot should be '
+                                                   'able to move within 1 '
+                                                   'second.\n'
+                                                   'User should hear a click '
+                                                   'of the brakes release.\n',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154054,
+              'status_id': 1,
+              'test_id': 238237,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775480784,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Turn on the robot. ',
+                                       'expected': 'Robot should be powered '
+                                                   'up.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Open up the SWI',
+                                       'expected': 'SWI shows the Prep trailer '
+                                                   'screen-  '
+                                                   '![](index.php?/attachments/get/a869ba11-bf6f-4c90-8076-0ac91ecc1066) ',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Plug the pendant into the '
+                                                  'robot. ',
+                                       'expected': 'Pendant is plugged in\n'
+                                                   '\n'
+                                                   '\n',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Look at the SWI ',
+                                       'expected': 'SWI now shows a pendant '
+                                                   'attached paged with a '
+                                                   'diagram\n'
+                                                   '\n'
+                                                   '  \n'
+                                                   ' '
+                                                   '![](index.php?/attachments/get/dfd9a862-0f7f-4799-b004-db990c7d47bf) ',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Go to the hamburger menu',
+                                       'expected': 'User will see the option '
+                                                   'of Pendant Help at the '
+                                                   'top\n'
+                                                   '\n'
+                                                   '  \n'
+                                                   '    ',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Through the SWI Home page, '
+                                                  'attempt to control the '
+                                                  'robot.',
+                                       'expected': 'SWI should not allow '
+                                                   'Workflow, Drive Control, '
+                                                   'or Arm Control. \n'
+                                                   '\n'
+                                                   '\n'
+                                                   '\n'
+                                                   '  \n'
+                                                   '  ',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Unplug the Pendant.',
+                                       'expected': 'Workflow, Drive Control, '
+                                                   'and Arm Control should '
+                                                   'become accessible\n'
+                                                   'Also the hamburger menu '
+                                                   'will only show Trailer '
+                                                   'unload now\n'
+                                                   '\n'
+                                                   '  \n'
+                                                   ' '
+                                                   '![](index.php?/attachments/get/18623455-9448-4223-bea4-5f452fb68755) ',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154053,
+              'status_id': 1,
+              'test_id': 238236,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775480758,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Power on the robot and plug '
+                                                  'in the pendant. Get '
+                                                  'pendant/robot to drive-able '
+                                                  'state',
+                                       'expected': 'Pendant is plugged in, '
+                                                   'robots breaks are unlocked '
+                                                   '(User heard a click)',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Push the left joystick '
+                                                  '**UP**.',
+                                       'expected': 'Robot should drive '
+                                                   '**forward**.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Push the left joystick '
+                                                  '**DOWN**.',
+                                       'expected': 'Robot should drive '
+                                                   '**backward**.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Push the left joystick '
+                                                  '**LEFT**.',
+                                       'expected': 'Robot should drive '
+                                                   'laterally to **the left**.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Push the left joystick '
+                                                  '**RIGHT**.',
+                                       'expected': 'Robot should drive '
+                                                   'laterally to the '
+                                                   '**right**.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Push the right joystick '
+                                                  '**LEFT**.',
+                                       'expected': 'Robot should spin to the '
+                                                   '**left '
+                                                   '(counter-clockwise)**.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Push the right joystick '
+                                                  '**RIGHT**.',
+                                       'expected': 'Robot should spin to the '
+                                                   '**right (clockwise)**.',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Push the left joystick '
+                                                  '**UP** and the right '
+                                                  'joystick **LEFT '
+                                                  'simultaneously**.',
+                                       'expected': 'Robot should move '
+                                                   '**forward while turning to '
+                                                   'the left**.',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154052,
+              'status_id': 1,
+              'test_id': 238235,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775480735,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Attach pendant to Stretch '
+                                                  'and use the deadman switch '
+                                                  'to unlock robots breaks ',
+                                       'expected': 'Pendant turns on and boots '
+                                                   'up and to robot',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Hold down the deadman '
+                                                  'switch and the Stow button '
+                                                  'to start movement. Hold '
+                                                  'buttons until Stow position '
+                                                  'is completed! \n'
+                                                  '\n'
+                                                  'Note: Pendant stow is very '
+                                                  'slow and if button sequence '
+                                                  'is terminated, the arm will '
+                                                  'go to Home position before '
+                                                  'Stowing  ',
+                                       'expected': 'Arm moves to Stow.\n'
+                                                   '  '
+                                                   '![](index.php?/attachments/get/143ef033-af4f-4fbb-85a6-8139ac2b3722) \n',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154051,
+              'status_id': 1,
+              'test_id': 238234,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': ['c093a4ee-484d-43f5-be04-78ab2ee71b97'],
+              'comment': 'Ticket: '
+                         'https://bostondynamics.atlassian.net/browse/STRE-59472',
+              'created_by': 441,
+              'created_on': 1775480567,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Ensure your local '
+                                                  'certificate is valid.\n'
+                                                  '\n'
+                                                  'run\n'
+                                                  '$BDI/rtg/credentials/linux/bin/generate-ssh-cert.pyz',
+                                       'expected': '\n'
+                                                   'expiration date is after '
+                                                   'today '
+                                                   '![](index.php?/attachments/get/bec72a2f-1a08-455b-b05b-a14a34c16670) ',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Login in as a BD User\n'
+                                                  '\n'
+                                                  'click on link in bottom '
+                                                  'left of log in dialog to '
+                                                  'bring up robot password '
+                                                  'lookup. login in to '
+                                                  'fortanix.\n'
+                                                  '\n'
+                                                  '\n'
+                                                  '\n'
+                                                  'copy the web.admin password '
+                                                  'and save it somewhere for '
+                                                  'the next step\n'
+                                                  'copy web.bd password\n'
+                                                  '\n'
+                                                  '\n'
+                                                  'using the web.bd password '
+                                                  'from above step, login as '
+                                                  'bd '
+                                                  '![](index.php?/attachments/get/2f9e545b-ba30-48cc-9c71-c90667f3e825)  '
+                                                  '![](index.php?/attachments/get/8d328b26-0ccd-431d-b558-258775424889) ',
+                                       'expected': 'You should now be logged '
+                                                   'in as a BD User',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Navigate to Settings -&gt; '
+                                                  'Users\n'
+                                                  'Ensure an admin user exists '
+                                                  'on the robot\n'
+                                                  '\n'
+                                                  'IF The admin user DOES NOT '
+                                                  'exist, create the user '
+                                                  '(setting the username to '
+                                                  'admin).\n'
+                                                  'IF the admin user DOES '
+                                                  'exist, edit the user by '
+                                                  'clicking on the user in the '
+                                                  'list.\n'
+                                                  '\n'
+                                                  'Whether you are creating or '
+                                                  'editing the admin user: Set '
+                                                  'the admin password to the '
+                                                  'saved web.admin password '
+                                                  'from step 2.\n'
+                                                  '\n'
+                                                  '\n'
+                                                  '\n'
+                                                  '\n'
+                                                  'Click "Update"/"Add Local '
+                                                  'User"\n'
+                                                  'Confirm the update by '
+                                                  'typing in the password for '
+                                                  'the bd user (web.bd '
+                                                  'password). '
+                                                  '![](index.php?/attachments/get/4bce6694-55ae-4eee-aef4-f77b417432e4) \n'
+                                                  'Note: when pressing update '
+                                                  'SWI asks for users web.bd '
+                                                  'password to comfirn '
+                                                  'password change',
+                                       'expected': 'You should be redirected '
+                                                   'back to the Users page '
+                                                   'with a success toast\n'
+                                                   '\n'
+                                                   '\n'
+                                                   ' '
+                                                   '![](index.php?/attachments/get/d48a55f2-e632-409c-bd5d-17bacbe1cbff) ',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Logout of the BD User',
+                                       'expected': 'You should no longer be '
+                                                   'logged in as a BD user',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': 'Green text at the bottom of '
+                                                 'the screen appeared '
+                                                 'describing a "successfull '
+                                                 'login". However, login '
+                                                 'screen was never passed and '
+                                                 'could not access any SWI '
+                                                 'functions.  '
+                                                 '![](index.php?/attachments/get/c9e60f67-ca00-48ba-ac8f-8630df24483d)',
+                                       'additional_info': '',
+                                       'content': 'using the new admin '
+                                                  'password from step 3, login '
+                                                  'as admin\n'
+                                                  '\n'
+                                                  '\n'
+                                                  ' '
+                                                  '![](index.php?/attachments/get/fd40bde6-6375-446f-95f9-9027355f4da1) ',
+                                       'expected': 'Green success.\n'
+                                                   '\n'
+                                                   ' '
+                                                   '![](index.php?/attachments/get/fab24507-96cf-4fa1-8790-fa6bd0b0181a) ',
+                                       'refs': '',
+                                       'status_id': '5'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Log out of admin',
+                                       'expected': 'User is now logged out',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': 'https://bostondynamics.atlassian.net/browse/STRE-59472',
+              'elapsed': None,
+              'id': 154050,
+              'status_id': 5,
+              'test_id': 238257,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775479323,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Connect robot to zone '
+                                                  'controller and enable high '
+                                                  'voltage. Under the '
+                                                  "'Diagnostics' menu, click "
+                                                  'on '
+                                                  "'CALIBRATION_BOARD_ACCESS_POSE'\n"
+                                                  '\n'
+                                                  'Note: Launch the behavior '
+                                                  'from the Diagnostics menu, '
+                                                  'not Manual Behaviors.\n'
+                                                  '\n',
+                                       'expected': 'Robot moves to calibration '
+                                                   'pose\n'
+                                                   '\n'
+                                                   ' '
+                                                   '![](index.php?/attachments/get/edf5e0bc-67dc-45c3-b0fa-abe11b86d7b0) \n'
+                                                   '\n',
+                                       'refs': '',
+                                       'status_id': '8'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Once in the pose, hit the '
+                                                  'estop and attach the '
+                                                  'calibration board to the '
+                                                  'gripper\n'
+                                                  '\n',
+                                       'expected': 'Calibration board is '
+                                                   'attached\n'
+                                                   ' '
+                                                   '![](index.php?/attachments/get/cd5a0f1d-e9b7-4ebb-bd63-f9193e825cc2) \n',
+                                       'refs': '',
+                                       'status_id': '8'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Enable high voltage/get the '
+                                                  'robot ready to run a '
+                                                  'behavior. Under '
+                                                  "'Diagnostics' click on "
+                                                  "'CALIBRATION_DANCE'\n"
+                                                  '\n'
+                                                  '\n',
+                                       'expected': 'Robot will calibrate (~10 '
+                                                   'minutes)',
+                                       'refs': '',
+                                       'status_id': '8'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Once complete:  Remove cal '
+                                                  'board from gripper, and '
+                                                  'Stow arm.',
+                                       'expected': 'Arm stowed.',
+                                       'refs': '',
+                                       'status_id': '8'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Hard power cycle robot, and '
+                                                  'after booted up, view '
+                                                  'Faults.',
+                                       'expected': 'There should be no active '
+                                                   'faults regarding camera '
+                                                   'calibrations. Robot is '
+                                                   'calibrated.',
+                                       'refs': '',
+                                       'status_id': '8'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Run camera calibration '
+                                                  'health check '
+                                                  '(CAMERA_CAL_CHECK)',
+                                       'expected': 'it should pass',
+                                       'refs': '',
+                                       'status_id': '8'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154049,
+              'status_id': 8,
+              'test_id': 238240,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775479300,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Using an allen key, rotate '
+                                                  'some of the lidar camera '
+                                                  'screws on the robot out of '
+                                                  'their original position.\n'
+                                                  '\n',
+                                       'expected': '',
+                                       'refs': '',
+                                       'status_id': '8'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'There should be about 1m of '
+                                                  'space behind the lidar '
+                                                  'calibration board. (Note: '
+                                                  'at 44 the board can be 0.5m '
+                                                  'from the cage)\n'
+                                                  'Place the lidar calibration '
+                                                  'board in parallel and '
+                                                  'pendant drive the robot so '
+                                                  'that the cal board is '
+                                                  '&gt;1.5m away from the '
+                                                  'front of the robot.\n'
+                                                  'Make sure there is at least '
+                                                  '4 meters of space behind '
+                                                  'the robot.\n'
+                                                  '\n'
+                                                  'For Stretch Gen2: Place the '
+                                                  'cal board ~1m from the '
+                                                  'front of the robot\n'
+                                                  '\n'
+                                                  "Use 'Lidar Auto-Calibration "
+                                                  "Instructions (v0.1)' found "
+                                                  'in drive for detailed '
+                                                  'calibration instructions\n'
+                                                  '\n'
+                                                  '  \n'
+                                                  '\n'
+                                                  '\n',
+                                       'expected': 'The robot should be '
+                                                   'position as shown in '
+                                                   'image\n'
+                                                   '\n'
+                                                   '   '
+                                                   '![](index.php?/attachments/get/f86fdf49-2890-4b55-9600-fcac027600a1) \n',
+                                       'refs': '',
+                                       'status_id': '8'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Enable high voltage. Click '
+                                                  "on 'LIDAR_CAL_DANCE found "
+                                                  "under 'Diagnostics' in the "
+                                                  'SWI\n'
+                                                  '\n'
+                                                  'Note: Launch the behavior '
+                                                  'from the Diagnostics menu, '
+                                                  'not Manual Behaviors.',
+                                       'expected': 'Lidar Calibration will '
+                                                   'begin (~5 minutes)',
+                                       'refs': '',
+                                       'status_id': '8'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Once complete, click on '
+                                                  'results. The results will '
+                                                  'tell you how many CW or CCW '
+                                                  'turns need to be turned for '
+                                                  'the pitch or roll for each '
+                                                  'lidar. \n'
+                                                  '\n'
+                                                  ' '
+                                                  '![](index.php?/attachments/get/6e3dceac-fe67-485c-a892-15123e8ce096) \n',
+                                       'expected': 'SWI displays which lidar '
+                                                   'screen needs to be rotated '
+                                                   '# of flats (60deg)',
+                                       'refs': '',
+                                       'status_id': '8'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Adjust the pitch and roll '
+                                                  'for the uncalibrated lidars '
+                                                  'using a hex key\n'
+                                                  '\n'
+                                                  'For Stretch Gen1: use a 2mm '
+                                                  'key \n'
+                                                  'For Stretch Gen2: use a 3mm '
+                                                  'key \n'
+                                                  '\n'
+                                                  ' '
+                                                  '![](index.php?/attachments/get/f18ef7cc-6d12-449e-9a0c-7c5bab11e9be) \n',
+                                       'expected': '',
+                                       'refs': '',
+                                       'status_id': '8'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Once adjusted, setup and '
+                                                  "run 'Lidar Cal Dance' "
+                                                  'again.\n'
+                                                  '\n'
+                                                  'Should get successful '
+                                                  'results, but may have to '
+                                                  'run this behavior multiple '
+                                                  'times with adjustments to '
+                                                  'get it correct',
+                                       'expected': 'Lidars should be '
+                                                   'calibrated\n'
+                                                   '\n'
+                                                   'If "debugTurnsCw" for '
+                                                   'pitch adjustment is less '
+                                                   'than 0.4 turns (~0.2 '
+                                                   'degrees) or \n'
+                                                   '"debugTurnsCw" for roll '
+                                                   'adjustment is less than 2 '
+                                                   'turns (~0.2 deg) you do '
+                                                   'not need to adjust them \n'
+                                                   '\n'
+                                                   '\n'
+                                                   ' '
+                                                   '![](index.php?/attachments/get/fe37ca4f-0e43-447f-be15-7c45adc01d1c) \n',
+                                       'refs': '',
+                                       'status_id': '8'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': '\t\n'
+                                                  'Reboot autonomy with button '
+                                                  'on SWI',
+                                       'expected': 'Robots autonomy reboots',
+                                       'refs': '',
+                                       'status_id': '8'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154048,
+              'status_id': 8,
+              'test_id': 238239,
+              'version': None},
+             {'assignedto_id': None,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775479266,
+              'custom_desired_results': None,
+              'custom_location': 19,
+              'custom_po_rc': 1,
+              'custom_po_version_dropdown': 2,
+              'custom_robot': 'SB14',
+              'custom_sco_version': 4,
+              'custom_step_results': [{'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Log into the SWI on the '
+                                                  'robot as "BD" user',
+                                       'expected': 'Login to the robot SWI.\n'
+                                                   'Once logged in you should '
+                                                   'have access to the '
+                                                   'following SWI menu options '
+                                                   'that were not available '
+                                                   'when logged out:\n'
+                                                   '-BD Settings\n'
+                                                   '-Manual Behaviors\n'
+                                                   '-Diagnostics\n'
+                                                   '-Autonomy\n'
+                                                   '-Power',
+                                       'refs': '',
+                                       'status_id': '1'},
+                                      {'actual': '',
+                                       'additional_info': '',
+                                       'content': 'Navigate to the "Manual '
+                                                  'Behaviors" menu and scroll '
+                                                  'down to the "FAT Checks '
+                                                  '&gt; FAT Burn in" drop down '
+                                                  'as shown in the image '
+                                                  'below. From here run the '
+                                                  '"BURN_IN_AGGRESSIVE_PRETZEL_STRESS_TEST" '
+                                                  'behavior for 5 minutes. '
+                                                  'This should give enough '
+                                                  'time for the behavior to '
+                                                  'run through at least 2 '
+                                                  'cycles of its movements.\n'
+                                                  '\n'
+                                                  '\n'
+                                                  ' '
+                                                  '![](index.php?/attachments/get/10abc15c-9de9-4f64-9ecd-05f059062e0f) ',
+                                       'expected': '-Robot should cycle '
+                                                   'through movements without '
+                                                   'failure\n'
+                                                   '-SWI should show state of '
+                                                   'test run and time '
+                                                   'remaining',
+                                       'refs': '',
+                                       'status_id': '1'}],
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': 0,
+              'custom_zo_version': 4,
+              'custom_zo_version_acc': 1,
+              'defects': None,
+              'elapsed': None,
+              'id': 154047,
+              'status_id': 1,
+              'test_id': 238255,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154037,
+              'status_id': 3,
+              'test_id': 238260,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154036,
+              'status_id': 3,
+              'test_id': 238259,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154035,
+              'status_id': 3,
+              'test_id': 238258,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154034,
+              'status_id': 3,
+              'test_id': 238257,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154033,
+              'status_id': 3,
+              'test_id': 238256,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154032,
+              'status_id': 3,
+              'test_id': 238255,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154031,
+              'status_id': 3,
+              'test_id': 238254,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154030,
+              'status_id': 3,
+              'test_id': 238253,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154029,
+              'status_id': 3,
+              'test_id': 238252,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154028,
+              'status_id': 3,
+              'test_id': 238251,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154027,
+              'status_id': 3,
+              'test_id': 238250,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154026,
+              'status_id': 3,
+              'test_id': 238249,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154025,
+              'status_id': 3,
+              'test_id': 238248,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154024,
+              'status_id': 3,
+              'test_id': 238247,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154023,
+              'status_id': 3,
+              'test_id': 238246,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154022,
+              'status_id': 3,
+              'test_id': 238245,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154021,
+              'status_id': 3,
+              'test_id': 238244,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154020,
+              'status_id': 3,
+              'test_id': 238243,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154019,
+              'status_id': 3,
+              'test_id': 238242,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154018,
+              'status_id': 3,
+              'test_id': 238241,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154017,
+              'status_id': 3,
+              'test_id': 238240,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154016,
+              'status_id': 3,
+              'test_id': 238239,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154015,
+              'status_id': 3,
+              'test_id': 238238,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154014,
+              'status_id': 3,
+              'test_id': 238237,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154013,
+              'status_id': 3,
+              'test_id': 238236,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154012,
+              'status_id': 3,
+              'test_id': 238235,
+              'version': None},
+             {'assignedto_id': 0,
+              'attachment_ids': [],
+              'comment': None,
+              'created_by': 441,
+              'created_on': 1775476245,
+              'custom_desired_results': None,
+              'custom_location': None,
+              'custom_po_rc': None,
+              'custom_po_version_dropdown': None,
+              'custom_robot': None,
+              'custom_sco_version': None,
+              'custom_step_results': None,
+              'custom_testrail_bdd_scenario_results': None,
+              'custom_yo_version_dropdown': None,
+              'custom_zo_version': None,
+              'custom_zo_version_acc': None,
+              'defects': None,
+              'elapsed': None,
+              'id': 154011,
+              'status_id': 3,
+              'test_id': 238234,
+              'version': None}],
+ 'size': 48}

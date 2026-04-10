@@ -1,0 +1,211 @@
+{
+  "apiVersion": "",
+  "description": {
+    "robotSerial": "",
+    "credSerial": "",
+    "variant": "",
+    "name": "",
+    "serial": "",
+    "nickname": ""
+  },
+  "display": {
+    "url": "/"
+  },
+  "authenticated": false,
+  "online": true,
+  "faults": {
+    "activeFaults": [
+      {
+        "id": "",
+        "dtc": "",
+        "type": "",
+        "subtype": "",
+        "location": "",
+        "severity": 2,
+        "startTime": ,
+        "message": "",
+        "resolution": "",
+        "attributes": {
+          "intervention": false
+        },
+        "causedByIds": []
+      },
+      {
+        "id": "",
+        "dtc": "",
+        "type": "",
+        "subtype": "",
+        "location": "",
+        "severity": 1,
+        "startTime": ,
+        "message": "",
+        "resolution": "",
+        "attributes": {
+          "intervention": false
+        },
+        "causedByIds": []
+      }
+    ],
+    "faultServiceConnected": true
+  },
+  "swiFeatures": [
+    "truckUnloadHealthChecks",
+    "pendantdLogging",
+    "actuatorBuzzingFault",
+    "showChangeDockButton",
+    "visualizeSafetyNetwork",
+    "fullUpperCollisionObjectScan",
+    "labelSense",
+    "ppvShadow",
+    "labelSenseShown"
+  ],
+  "networkStatus": {
+    "wireless": true,
+    "connectionType": 1,
+    "wifiStats": {
+      "connectionState": "WIFI_CONNECTION_STATE_CONNECTED",
+      "ssid": "bd-stretch",
+      "bssid": "0c:d5:d3:8c:e5:26",
+      "freqMhz": 5975,
+      "bitrate": 1200,
+      "levelDbm": -49,
+      "noiseDbm": -92,
+      "snr": 43
+    },
+    "wifiQuality": 3,
+    "networkInterfaces": {
+      "wifi": "68:7A:64:D7:9D:3F",
+      "eth0": "00:30:64:77:7F:45"
+    }
+  },
+  "release": {
+    "name": "stretch_release_gen2-2026.03.26.10215",
+    "dateModified": "2026-03-26T21:37:56.304000+00:00",
+    "releaseInfo": {
+      "buildDate": "2026-03-26T16:53:06+00:00",
+      "commitDate": "2026-03-26T18:45:41+00:00",
+      "changeSet": "bee7f96e00a060109a324ddcbbe0459ff0f7a8bb",
+      "description": "Internal",
+      "internalDescription": "",
+      "uuid": "b17bfaaf-b9dc-4195-99b2-b3240f7cdd3d",
+      "version": "1.7.0-rc3-pre4833-bee7f96"
+    }
+  },
+  "inactiveReleases": [
+    {
+      "name": "root1",
+      "dateModified": "2026-03-26T21:38:13+00:00",
+      "releaseInfo": {
+        "buildDate": "2026-03-26T13:08:19+00:00",
+        "commitDate": "2026-03-25T17:11:37+00:00",
+        "changeSet": "934bf00e984643d0613adf7a35a16f39d33d71cb",
+        "description": "Internal",
+        "internalDescription": "ablank/infinite-pallet-to-pallet",
+        "uuid": "6b53c9bc-cd07-4d40-bc74-e166423fecd3",
+        "version": "1.7.0-rc3-pre4526-934bf0"
+      }
+    }
+  ],
+  "countryCode": "US",
+  "startupStatus": {
+    "ready": true,
+    "conductor": true,
+    "supervisor": true,
+    "autonomy": true,
+    "p0": true,
+    "y0": true,
+    "cameras": true,
+    "lidars": true,
+    "uptimeSecs": 55666.64
+  },
+  "safetydStatus": {
+
+  },
+  "hasLogs": false,
+  "experimentalLogsActive": [],
+  "zoneConnectionStatus": {
+    "zoneState": 0,
+    "safetydStatus": {
+
+    },
+    "dockIndex": -1,
+    "requiresManualDockDoorSelection": false
+  },
+  "status": {
+    "message": "",
+    "uiState": 1,
+    "battery": {
+      "voltage": 57.2000007629395,
+      "soc": 100,
+      "armHighVoltageEnabled": false,
+      "baseHighVoltageEnabled": false,
+      "charging": false,
+      "chargerMode": 1,
+      "timeRemainingSec": 40978,
+      "timeUntilFullSec": -1,
+      "bms1FirmwareVersion": "6.4.0",
+      "bms2FirmwareVersion": "6.4.0",
+      "packNumConfig": 2,
+      "batteryType": 4
+    },
+    "safetyState": {
+      "workcellClosed": true,
+      "workcellArmed": false,
+      "conveyorAttached": false,
+      "baseSpeedLimit": 0,
+      "safetyProfile": 0,
+      "pendantConnected": false,
+      "zoneId": 0,
+      "flags": [
+        "safeState",
+        "armStowed",
+        "wcToY0SafetyConnectionOk",
+        "lowerPdbZone_1Powered",
+        "lowerPdbZone_2Powered",
+        "upperPdbZone_1Powered",
+        "wcGate_1Locked",
+        "wcGate_2Locked"
+      ],
+      "onRobotVersion": {
+        "fwMajorVersion": 14,
+        "apiMajorVersion": 14
+      },
+      "z0Version": {
+
+      },
+      "safetyFaultsInfo": {
+        "alarms": [],
+        "eStopped": false
+      }
+    },
+    "lightingState": {
+      "color": 2,
+      "mode": 1
+    },
+    "truckUnloadTimings": {
+      "pauseCount": 0,
+      "pauseSeconds": 0,
+      "totalOperationalTimeSeconds": 0,
+      "totalActiveTimeSeconds": 0,
+      "totalActiveUnloadTimeSeconds": 0,
+      "totalConveyorFullSeconds": 0,
+      "totalActiveTruckBackoutSeconds": 0
+    },
+    "truckUnloadMetrics": {
+      "enteredTruckBackout": false,
+      "backoutPercentComplete": 0,
+      "boxesPicked": 0,
+      "boxesPlaced": 0,
+      "boxesDropped": 0,
+      "boxPickRate": 0,
+      "boxesPlacedDuringTruckBackout": 0,
+      "interventionCountDuringTruckBackout": 0,
+      "workflowPickRate": 0
+    },
+    "interventionMetrics": {
+
+    }
+  },
+  "isMapRecording": false,
+  "lockedOut": false
+}

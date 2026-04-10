@@ -1,0 +1,379 @@
+{
+  "apiVersion": "2.0.220725",
+  "description": {
+    "robotSerial": "stretch-BD-60210014",
+    "credSerial": "67196-0038",
+    "variant": "stretch_1_5",
+    "name": "stretch-BD-60210014",
+    "serial": "67196-0038",
+    "nickname": "SB27"
+  },
+  "display": {
+    "url": "/"
+  },
+  "authenticated": false,
+  "online": true,
+  "faults": {
+    "activeFaults": [
+      {
+        "id": "23c28829-0db7-49c4-8ac9-f91a5cfaeaac",
+        "dtc": "SB-PHW02-BB",
+        "type": "PlatformHardwareFault",
+        "subtype": "INVALID_PCIE_DEVICE",
+        "location": "BASE",
+        "severity": 2,
+        "startTime": 1774891590240.14,
+        "message": "",
+        "resolution": "",
+        "attributes": {
+          "intervention": false
+        },
+        "causedByIds": []
+      },
+      {
+        "id": "5ae53bad-225b-4d86-8824-f2a0330c97ab",
+        "dtc": "SB-PHW04-AA",
+        "type": "PlatformHardwareFault",
+        "subtype": "INVALID_NET_DEVICE",
+        "location": "ARM",
+        "severity": 2,
+        "startTime": 1774894563138.04,
+        "message": "",
+        "resolution": "",
+        "attributes": {
+          "intervention": false
+        },
+        "causedByIds": []
+      }
+    ],
+    "faultServiceConnected": true
+  },
+  "swiFeatures": [
+    "pendantdLogging",
+    "labelSense",
+    "showChangeDockButton",
+    "fullUpperCollisionObjectScan",
+    "truckUnloadHealthChecks",
+    "visualizeSafetyNetwork",
+    "actuatorBuzzingFault",
+    "ppvShadow",
+    "labelSenseShown"
+  ],
+  "networkStatus": {
+    "wireless": true,
+    "connectionType": 1,
+    "wifiStats": {
+      "connectionState": "WIFI_CONNECTION_STATE_CONNECTED",
+      "ssid": "bd-stretch",
+      "bssid": "e4:37:9f:66:27:a6",
+      "freqMhz": 6055,
+      "levelDbm": -63,
+      "noiseDbm": -92,
+      "snr": 29
+    },
+    "wifiQuality": 2,
+    "networkInterfaces": {
+      "wifi": "68:7A:64:D7:A1:04",
+      "eth0": "00:30:64:7D:09:2C"
+    }
+  },
+  "release": {
+    "name": "UNKNOWN",
+    "dateModified": "1970-01-01T00:00:00+00:00",
+    "releaseInfo": {
+      "buildDate": "2026-03-20T17:08:17+00:00",
+      "commitDate": "2026-03-20T16:24:08+00:00",
+      "changeSet": "0b3956041d4f207b86ca286f42bb7e3e9059f20d",
+      "description": "Internal",
+      "internalDescription": "",
+      "uuid": "00232f00-bdf7-489f-9100-dcb1e98f0ee5",
+      "version": "2.0.0-rc7"
+    }
+  },
+  "inactiveReleases": [],
+  "countryCode": "US",
+  "startupStatus": {
+    "ready": true,
+    "conductor": true,
+    "supervisor": true,
+    "autonomy": true,
+    "p0": true,
+    "y0": true,
+    "cameras": true,
+    "lidars": true,
+    "uptimeSecs": 3102.49
+  },
+  "hasLogs": true,
+  "experimentalLogsActive": [],
+  "safetydStatus": {
+    "external": {
+      "name": "NA",
+      "listenIp": "::",
+      "publishIp": "10.224.128.60",
+      "packetsReceived": 5654,
+      "packetsDropped": 1,
+      "packetsDiscarded": 0,
+      "unexpectedResets": 0,
+      "commsState": 2,
+      "jitterUs": 2125,
+      "receivingPackets": true
+    }
+  },
+  "zoneConnectionStatus": {
+    "zoneState": 4,
+    "safetydStatus": {
+      "zoneId": 207,
+      "mode": 1,
+      "internalInfo": {
+        "interfaceName": "br-eboxes",
+        "listenIp": "::",
+        "publishIp": [
+          "fe80::2f:5aff:fe19:604"
+        ],
+        "commsState": 2,
+        "packetsReceived": {
+          "low": 5799,
+          "high": 0,
+          "unsigned": false
+        },
+        "packetsDropped": {
+          "low": 1478400,
+          "high": 0,
+          "unsigned": false
+        },
+        "histogram": [
+          {
+
+          },
+          {
+            "minTime": {
+              "low": 7,
+              "high": 0,
+              "unsigned": false
+            }
+          },
+          {
+            "minTime": {
+              "low": 12,
+              "high": 0,
+              "unsigned": false
+            }
+          },
+          {
+            "minTime": {
+              "low": 30,
+              "high": 0,
+              "unsigned": false
+            },
+            "count": {
+              "low": 5799,
+              "high": 0,
+              "unsigned": false
+            }
+          },
+          {
+            "minTime": {
+              "low": 100,
+              "high": 0,
+              "unsigned": false
+            }
+          },
+          {
+            "minTime": {
+              "low": 200,
+              "high": 0,
+              "unsigned": false
+            }
+          },
+          {
+            "minTime": {
+              "low": 400,
+              "high": 0,
+              "unsigned": false
+            }
+          }
+        ]
+      },
+      "externalInfo": {
+        "listenIp": "::",
+        "publishIp": [
+          "10.224.128.60"
+        ],
+        "commsState": 2,
+        "packetsReceived": {
+          "low": 5797,
+          "high": 0,
+          "unsigned": false
+        },
+        "packetsDropped": {
+          "low": 1,
+          "high": 0,
+          "unsigned": false
+        },
+        "histogram": [
+          {
+            "count": {
+              "low": 87,
+              "high": 0,
+              "unsigned": false
+            }
+          },
+          {
+            "minTime": {
+              "low": 7,
+              "high": 0,
+              "unsigned": false
+            },
+            "count": {
+              "low": 41,
+              "high": 0,
+              "unsigned": false
+            }
+          },
+          {
+            "minTime": {
+              "low": 12,
+              "high": 0,
+              "unsigned": false
+            },
+            "count": {
+              "low": 857,
+              "high": 0,
+              "unsigned": false
+            }
+          },
+          {
+            "minTime": {
+              "low": 30,
+              "high": 0,
+              "unsigned": false
+            },
+            "count": {
+              "low": 4797,
+              "high": 0,
+              "unsigned": false
+            }
+          },
+          {
+            "minTime": {
+              "low": 100,
+              "high": 0,
+              "unsigned": false
+            },
+            "count": {
+              "low": 15,
+              "high": 0,
+              "unsigned": false
+            }
+          },
+          {
+            "minTime": {
+              "low": 200,
+              "high": 0,
+              "unsigned": false
+            }
+          },
+          {
+            "minTime": {
+              "low": 400,
+              "high": 0,
+              "unsigned": false
+            }
+          }
+        ],
+        "jitterUs": {
+          "low": 2676,
+          "high": 0,
+          "unsigned": false
+        }
+      },
+      "zoneType": 1
+    },
+    "dockIndex": 1,
+    "dockId": "6",
+    "requiresManualDockDoorSelection": false
+  },
+  "status": {
+    "message": "",
+    "uiState": 1,
+    "battery": {
+      "voltage": 54.6000022888184,
+      "soc": 70,
+      "armHighVoltageEnabled": false,
+      "baseHighVoltageEnabled": false,
+      "charging": false,
+      "chargerMode": 0,
+      "timeRemainingSec": 28037,
+      "timeUntilFullSec": -1,
+      "bms1FirmwareVersion": "6.4.0",
+      "bms2FirmwareVersion": "6.4.0",
+      "packNumConfig": 2,
+      "batteryType": 4
+    },
+    "safetyState": {
+      "workcellClosed": true,
+      "workcellArmed": true,
+      "conveyorAttached": false,
+      "baseSpeedLimit": 0,
+      "safetyProfile": 0,
+      "pendantConnected": false,
+      "zoneId": 207,
+      "flags": [
+        "safeState",
+        "armStowed",
+        "wcToY0SafetyConnectionOk",
+        "lowerPdbZone_1Powered",
+        "lowerPdbZone_2Powered",
+        "upperPdbZone_1Powered",
+        "autoRunning",
+        "wcGate_1Locked",
+        "wcGate_2Locked",
+        "conveyorReady",
+        "conveyorRequestComplete",
+        "conveyorPresent",
+        "conveyorBeltRunning"
+      ],
+      "onRobotVersion": {
+        "fwMajorVersion": 14,
+        "apiMajorVersion": 14
+      },
+      "z0Version": {
+        "fwMajorVersion": 7,
+        "fwMinorVersion": 3,
+        "apiMajorVersion": 1
+      },
+      "safetyFaultsInfo": {
+        "alarms": [],
+        "eStopped": false
+      }
+    },
+    "lightingState": {
+      "color": 4,
+      "mode": 2
+    },
+    "truckUnloadTimings": {
+      "pauseCount": 0,
+      "pauseSeconds": 0,
+      "totalOperationalTimeSeconds": 20,
+      "totalActiveTimeSeconds": 11,
+      "totalActiveUnloadTimeSeconds": 11,
+      "totalConveyorFullSeconds": 0,
+      "totalActiveTruckBackoutSeconds": 0
+    },
+    "truckUnloadMetrics": {
+      "enteredTruckBackout": false,
+      "backoutPercentComplete": 0,
+      "boxesPicked": 0,
+      "boxesPlaced": 0,
+      "boxesDropped": 0,
+      "boxPickRate": 0,
+      "boxesPlacedDuringTruckBackout": 0,
+      "interventionCountDuringTruckBackout": 0,
+      "workflowPickRate": 0
+    },
+    "interventionMetrics": {
+
+    }
+  },
+  "lockedOut": false
+}

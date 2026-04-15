@@ -18,6 +18,7 @@ from googleapiclient.errors import HttpError
 
 import Info_Parser
 import glossary as Gloss
+import Decision_matrix as Decision
 
 #-----------------------------------------------------------------------------------------------------------------------------
 
@@ -27,6 +28,9 @@ import glossary as Gloss
 #(i.e. change this value to the range of cells that you want the code to automatically fill in data)
 RANGE = "A1:H14"
 
+
+def authenticator():
+  return gspread.oauth(credentials_filename = 'credentials.json')
 
 def data_linker(spreadsheet_data, robot_info):
   '''
@@ -63,7 +67,7 @@ def sheet_duplicator(sheet, worksheet, data):
   '''
   #TODO: Add compatability for different forms of testing (i.e. Endurance Testing/Performance Runs) 
 
-  return sheet.duplicate_sheet(worksheet.id, 2, new_sheet_name = f'MR | {data[0].data} | {data[4].data} | {data[6].data}')
+  return sheet.duplicate_sheet(worksheet.id, 2, new_sheet_name = f'MR | {data[0].data} | {data[5].data} | {data[8].data}')
       
 #endregion
 
@@ -80,23 +84,17 @@ def main():
   #TODO: Add compatability for different google Sheets (maybe work on a gui that allows additions of new sheets)
 
   try:
+    auth = authenticator()
+    user_requests = Decision.decision_handler(auth=auth)
 
-    sheet = gspread.oauth(credentials_filename='credentials.json').open(title="Robustness SQA testing sheet")
+    # sheet = gspread.oauth(credentials_filename='credentials.json').open(title="Robustness SQA testing sheet")
     
+    sheet, worksheet, config_data = user_requests
 
-    while True:
-      which_worksheet = int(input("Is this a Dock or Cell Robustness Test?\n1: Dock Testing\n2: Cell Testing\n"))
-      if which_worksheet == 1:
-        worksheet = sheet.worksheet('DOCK TEST TEMPLATE')
-        break
-      elif which_worksheet == 2:
-        worksheet = sheet.worksheet('CELL TEST TEMPLATE')
-        break
-      else:
-        print("That is not a valid option")
-    
+    sheet = auth.open(title=sheet)
+    worksheet = sheet.worksheet(worksheet)
 
-    robot_info = Info_Parser.robot_info()
+    robot_info = Info_Parser.robot_info(config_data=config_data)
     worksheet = sheet_duplicator(sheet, worksheet, robot_info)
 
     values = worksheet.get(RANGE)

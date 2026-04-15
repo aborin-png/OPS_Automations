@@ -9,11 +9,14 @@ import json
 import os
 import pprint
 from types import SimpleNamespace
+from functools import reduce
+import datetime
 
 
 import glossary as Gloss
 from API_fetch import API_Fetch
 
+ZONE_NAMES = Gloss.ZONE_NAMES
 #-----------------------------------------------------------------------------------------------------------------------------
 
 def info_parser(string_data):
@@ -23,12 +26,29 @@ def info_parser(string_data):
     '''
     return json.loads(string_data, object_hook=lambda d:SimpleNamespace(**d))
 
+def get_config():
+    with open('Config.json', 'r') as file:
+        file = file.read()
+        return json.loads(file, object_hook=lambda d:SimpleNamespace(**d))
+    
+def config_recontruction(dict_to_reconstruct, data):
+    '''
+    This function is responsible for reconstructing the data extracted from the config file into usuable code that python can interpret
+    and itemize into a class structure.
+    '''
+    
+    return [Gloss.Glossary(location=location, data = eval(data_member)) for location, data_member in vars(dict_to_reconstruct).items()]
 
-def robot_info():
+
+    
+
+
+def robot_info(config_data):
     '''
     This acts as a "master" to encapsulate the other two auxiliary functions into one function. This returns an
     array of class items containing relevant information.
     '''
     data = info_parser(API_Fetch())
 
-    return Gloss.create_new_glossary(data)
+
+    return config_recontruction(config_data, data=data)

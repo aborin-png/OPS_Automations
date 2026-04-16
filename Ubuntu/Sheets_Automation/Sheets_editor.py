@@ -100,7 +100,7 @@ def main():
 
   if update_from_git():
     print('Update Complete')
-    print('Auto update test 4')
+    print('Auto update test 5')
     return
 
 
@@ -131,5 +131,5 @@ def main():
       print('Make sure that the robot is on and is not booting up.')
 
 
-if __name__ == "__main__":
-  main()
+
+main()

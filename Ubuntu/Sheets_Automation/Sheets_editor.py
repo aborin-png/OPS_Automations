@@ -100,7 +100,7 @@ def main():
 
   if update_from_git():
     print('Update Complete')
-    print('Auto update test 3')
+    print('Auto update test 4')
     return
 
 

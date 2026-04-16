@@ -22,7 +22,7 @@ from googleapiclient.errors import HttpError
 import Info_Parser
 import glossary as Gloss
 import Decision_matrix as Decision
-import updater as update
+import OPS_Automations.Ubuntu.Storage.updater as update
 
 #-----------------------------------------------------------------------------------------------------------------------------
 

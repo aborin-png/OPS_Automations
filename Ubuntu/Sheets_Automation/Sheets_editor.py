@@ -40,7 +40,8 @@ def update_from_git():
     if (1 if decision_num == 'y' or decision_num == 'Y' else 0):
       origin.pull()
       print('Update Complete!')
-  return 
+      return True
+  return False
 
 
 def authenticator():
@@ -99,8 +100,7 @@ def main():
   #   return
 
   if update_from_git():
-    print('Update Complete')
-    print('Auto update test 5')
+    print('Auto update test 6')
     return
 
 

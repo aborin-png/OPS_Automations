@@ -9,6 +9,7 @@ google sheets doc, duplicating, naming, and finally editing the google sheet wit
 
 import os.path
 import gspread
+import pathlib as Path
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -30,7 +31,7 @@ RANGE = "A1:H14"
 
 
 def authenticator():
-  return gspread.oauth(credentials_filename = 'credentials.json')
+  return gspread.oauth(credentials_filename = Path.Path(__file__).parent.resolve() / 'credentials.json')
 
 def data_linker(spreadsheet_data, robot_info):
   '''
@@ -61,13 +62,11 @@ def data_linker(spreadsheet_data, robot_info):
   return updated_spreadsheet
 
 
-def sheet_duplicator(sheet, worksheet, data):
+def sheet_duplicator(sheet, worksheet, data, option_name):
   '''
   This simple code is responsible for taking in a worksheet template, duplicating it, then renaming the duplicate to properly match the test.
   '''
-  #TODO: Add compatability for different forms of testing (i.e. Endurance Testing/Performance Runs) 
-
-  return sheet.duplicate_sheet(worksheet.id, 2, new_sheet_name = f'MR | {data[0].data} | {data[5].data} | {data[8].data}')
+  return sheet.duplicate_sheet(worksheet.id, 2, new_sheet_name = f'{option_name} | {data[0].data} | {data[5].data} | {data[8].data}')
       
 #endregion
 
@@ -77,25 +76,23 @@ def sheet_duplicator(sheet, worksheet, data):
 def main():
   '''
   This is the main code of the script.
-  This code is responsible for acquiring the sheet we are working with (dependent on the test to be run), acquiring the template to duplicate and name,
-  then linking the data to the appropriate locations and writing all data back to the worksheet. 
+  This code is responsible for polling the user to decide on what actions to be taken and for which sheets/worksheets to use. 
+  After the user is polled, it runs all relevant functions to acquire data from SWI, link it to the deisred data, and then write
+  the new information back to the desired  google sheet. 
   '''
 
-  #TODO: Add compatability for different google Sheets (maybe work on a gui that allows additions of new sheets)
 
   try:
     auth = authenticator()
     user_requests = Decision.decision_handler(auth=auth)
-
-    # sheet = gspread.oauth(credentials_filename='credentials.json').open(title="Robustness SQA testing sheet")
     
-    sheet, worksheet, config_data = user_requests
+    sheet, worksheet, config_data, option_name = user_requests
 
     sheet = auth.open(title=sheet)
     worksheet = sheet.worksheet(worksheet)
 
     robot_info = Info_Parser.robot_info(config_data=config_data)
-    worksheet = sheet_duplicator(sheet, worksheet, robot_info)
+    worksheet = sheet_duplicator(sheet, worksheet, robot_info, option_name)
 
     values = worksheet.get(RANGE)
     if not values:

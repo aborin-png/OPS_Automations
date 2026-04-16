@@ -1,12 +1,27 @@
+'''
+This file is responsible for any user facing interaction.
+This means that this file is meant to poll the user for the proper actions to be taken and for choosing which
+files these actions should done on.
+The code will then return a list of all decisions the user had made. 
+'''
+
+#-----------------------------------------------------------------------------------------------------------------------------
+
 import datetime
 import gspread
 
 from Info_Parser import get_config
-# from Sheets_editor import authenticator
 
+#-----------------------------------------------------------------------------------------------------------------------------
 
 def multiple_sheets_response(Folder, auth):
-    # gsheet = authenticator()
+    '''
+    This function is designed for options that have multiple different google sheet options that are not statically named.
+    For instance, the SQA sheets that are used change depending on which generation of robot is being tested. This means that
+    there are multiple differently named sheets inside a common directory in google drive.
+    This function would then search through that common directory and list all google sheets in that directory and allow the 
+    user to choose which sheet they would like to use.  
+    '''
 
     sheet_files = auth.list_spreadsheet_files(folder_id = Folder)
     option_list = []
@@ -26,10 +41,16 @@ def multiple_sheets_response(Folder, auth):
 
     return sheet
 
-
-#TODO: needs to return a list
+#-----------------------------------------------------------------------------------------------------------------------------
 
 def decision_handler(auth):
+    '''
+    This function is main handler for all user faced interactions. 
+    It is responsible for polling the user for any and all configurable choices to be made (i.e. which sheet to use and which
+    worksheets (if multiple are present) to use in the selected sheet)
+    The code will also link the dataset to be extracted from SWI depending on the which sheet is selected. 
+    '''
+
     config_options = get_config().Options
     option_list = []
     count = 0
@@ -69,6 +90,7 @@ def decision_handler(auth):
         worksheet = selected_option.Worksheet
 
     data = selected_option.Data
+    option_name = selected_option.Name
     
 
-    return [sheet, worksheet, data]
+    return [sheet, worksheet, data, option_name]

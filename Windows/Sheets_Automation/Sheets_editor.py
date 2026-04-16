@@ -19,6 +19,7 @@ from googleapiclient.errors import HttpError
 
 import Info_Parser
 import glossary as Gloss
+import Decision_matrix as Decision
 
 #-----------------------------------------------------------------------------------------------------------------------------
 
@@ -28,6 +29,9 @@ import glossary as Gloss
 #(i.e. change this value to the range of cells that you want the code to automatically fill in data)
 RANGE = "A1:H14"
 
+
+def authenticator():
+  return gspread.oauth(credentials_filename = Path.Path(__file__).parent.resolve() / 'credentials.json')
 
 def data_linker(spreadsheet_data, robot_info):
   '''
@@ -58,13 +62,11 @@ def data_linker(spreadsheet_data, robot_info):
   return updated_spreadsheet
 
 
-def sheet_duplicator(sheet, worksheet, data):
+def sheet_duplicator(sheet, worksheet, data, option_name):
   '''
   This simple code is responsible for taking in a worksheet template, duplicating it, then renaming the duplicate to properly match the test.
   '''
-  #TODO: Add compatability for different forms of testing (i.e. Endurance Testing/Performance Runs) 
-
-  return sheet.duplicate_sheet(worksheet.id, 2, new_sheet_name = f'MR | {data[0].data} | {data[4].data} | {data[6].data}')
+  return sheet.duplicate_sheet(worksheet.id, 2, new_sheet_name = f'{option_name} | {data[0].data} | {data[5].data} | {data[8].data}')
       
 #endregion
 
@@ -74,31 +76,23 @@ def sheet_duplicator(sheet, worksheet, data):
 def main():
   '''
   This is the main code of the script.
-  This code is responsible for acquiring the sheet we are working with (dependent on the test to be run), acquiring the template to duplicate and name,
-  then linking the data to the appropriate locations and writing all data back to the worksheet. 
+  This code is responsible for polling the user to decide on what actions to be taken and for which sheets/worksheets to use. 
+  After the user is polled, it runs all relevant functions to acquire data from SWI, link it to the deisred data, and then write
+  the new information back to the desired  google sheet. 
   '''
 
-  #TODO: Add compatability for different google Sheets (maybe work on a gui that allows additions of new sheets)
 
   try:
-
-    sheet = gspread.oauth(credentials_filename=Path.Path(__file__).parent.resolve() / 'credentials.json').open(title="Robustness SQA testing sheet")
+    auth = authenticator()
+    user_requests = Decision.decision_handler(auth=auth)
     
+    sheet, worksheet, config_data, option_name = user_requests
 
-    while True:
-      which_worksheet = int(input("Is this a Dock or Cell Robustness Test?\n1: Dock Testing\n2: Cell Testing\n"))
-      if which_worksheet == 1:
-        worksheet = sheet.worksheet('DOCK TEST TEMPLATE')
-        break
-      elif which_worksheet == 2:
-        worksheet = sheet.worksheet('CELL TEST TEMPLATE')
-        break
-      else:
-        print("That is not a valid option")
-    
+    sheet = auth.open(title=sheet)
+    worksheet = sheet.worksheet(worksheet)
 
-    robot_info = Info_Parser.robot_info()
-    worksheet = sheet_duplicator(sheet, worksheet, robot_info)
+    robot_info = Info_Parser.robot_info(config_data=config_data)
+    worksheet = sheet_duplicator(sheet, worksheet, robot_info, option_name)
 
     values = worksheet.get(RANGE)
     if not values:

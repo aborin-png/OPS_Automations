@@ -1,8 +1,6 @@
 '''
-This file serves as an internal storage manager. 
-Data members that are meant to be extracted out of SWI are stored and configured here along with storing dictionaries
-regarding zone # and their correlating Dock/Cell.
-This file also houses the Class structure that the extracted information uses. 
+This file serves as an internal storage. 
+This file houses any information that is meant to be hardcoded or structure definitions like classes.
 '''
 
 #-----------------------------------------------------------------------------------------------------------------------------
@@ -10,38 +8,6 @@ This file also houses the Class structure that the extracted information uses.
 import datetime
 
 #-----------------------------------------------------------------------------------------------------------------------------
-
-
-def get_glossary_items(data):
-    '''
-    This dictionary is reponsible for two taking the location in google sheets and linking it with the actualy data being extracted from SWI.
-    This allows for adding data members easily.
-    As an example: 
-    If a new data member for the robot's Serial number needed to be added,
-        1. add the name of the data as written on the google sheets doc (i.e. serial# => 'Serial:' on google sheet)
-        2. create a colon between the location and the next portion
-        3. Finally, add the location in the SWI api that the data can be found (refer to the manual for help on doing this)
-        
-        Ultimately, our addition will look like this: 
-        'Serial:' : data.description.robotSerial,
-    '''
-    glossary_items = {
-        'Robot'             : data.description.nickname,
-        'Serial:'           : data.description.robotSerial,
-        'SW Version'        : data.release.releaseInfo.version,
-        'Battery Firmware'  : data.status.battery.bms1FirmwareVersion,
-        'Battery % Started' : data.status.battery.soc,
-        'Dock #'            : ZONE_NAMES[data.zoneConnectionStatus.safetydStatus.zoneId] if data.zoneConnectionStatus.zoneState else 'None',
-        'Y0 Version'        : f'{data.status.safetyState.onRobotVersion.fwMajorVersion}.0.{data.status.safetyState.onRobotVersion.apiMajorVersion}.0',
-        'Z0 Version'        : f'{data.status.safetyState.z0Version.fwMajorVersion}.{data.status.safetyState.z0Version.fwMinorVersion}.{data.status.safetyState.z0Version.apiMajorVersion}.0' if data.zoneConnectionStatus.zoneState else '0.0.0.0',
-        'Date:'             : datetime.datetime.now().strftime('%m/%d/%Y'),
-    }
-    return glossary_items
-
-#-----------------------------------------------------------------------------------------------------------------------------
-#                                               DO NOT EDIT BEYOND THIS POINT
-#-----------------------------------------------------------------------------------------------------------------------------
-
 
 '''
 Zone # and the corresponding Dock/Cell name.
@@ -94,13 +60,6 @@ class Glossary:
     def new_data(self, data):
         self.data = data
 
-
-
-def create_new_glossary(api_data):
-    '''
-    This function is specifically for class-ifying the glossay_items dictionary so dot notation can be used
-    '''
-    return [Glossary(location=location, data=data) for location, data in get_glossary_items(api_data).items()]
 
 
     

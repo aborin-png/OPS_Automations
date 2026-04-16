@@ -7,9 +7,10 @@ google sheets doc, duplicating, naming, and finally editing the google sheet wit
 
 #-----------------------------------------------------------------------------------------------------------------------------
 
-import os.path
+import os
 import gspread
 import pathlib as Path
+from git import Repo
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -21,6 +22,7 @@ from googleapiclient.errors import HttpError
 import Info_Parser
 import glossary as Gloss
 import Decision_matrix as Decision
+import updater as update
 
 #-----------------------------------------------------------------------------------------------------------------------------
 
@@ -29,6 +31,12 @@ import Decision_matrix as Decision
 #This value is responsible for changing the search range the code will look for relevant data locaitons in the google sheet doc.
 #(i.e. change this value to the range of cells that you want the code to automatically fill in data)
 RANGE = "A1:H14"
+
+def update_from_git():
+  repo = Repo(Path.Path(__file__).parent.parent.parent)
+  origin = repo.remotes.origin
+  temp = origin.pull()
+  return True if len(temp) > 0 else False
 
 
 def authenticator():
@@ -82,8 +90,13 @@ def main():
   the new information back to the desired  google sheet. 
   '''
 
+  # if True:
+  #   print(Path.Path(__file__).parent.parent.parent)
+  #   return
 
-
+  if update_from_git():
+    print('Update Complete')
+    return
 
 
   try:

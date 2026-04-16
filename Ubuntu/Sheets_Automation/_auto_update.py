@@ -1,9 +1,0 @@
-''' 
-aborin-png/OPS_Automations
-
-'''
-
-from auto_update.update import Updater 
-
-
-updater = Updater(__doc__.strip())

@@ -17,6 +17,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+
 import Info_Parser
 import glossary as Gloss
 import Decision_matrix as Decision
@@ -80,6 +81,9 @@ def main():
   After the user is polled, it runs all relevant functions to acquire data from SWI, link it to the deisred data, and then write
   the new information back to the desired  google sheet. 
   '''
+
+
+
 
 
   try:

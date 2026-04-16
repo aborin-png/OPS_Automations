@@ -35,7 +35,7 @@ RANGE = "A1:H14"
 def update_from_git():
   repo = Repo(Path.Path(__file__).parent.parent.parent)
   origin = repo.remotes.origin
-  if origin.fetch() > 0:
+  if len(origin.fetch()) > 0:
     decision_num = input('An update was found, would you like to update? (y/n): ')
     if (1 if decision_num == 'y' or decision_num == 'Y' else 0):
       origin.pull()

@@ -9,7 +9,7 @@ alias deactivate 'test $?_OLD_VIRTUAL_PATH != 0 && setenv PATH "$_OLD_VIRTUAL_PA
 # Unset irrelevant variables.
 deactivate nondestructive
 
-setenv VIRTUAL_ENV /home/BOSDYN/aborin/Desktop/automation_scripts/Python_Automations
+setenv VIRTUAL_ENV /home/BOSDYN/aborin/Desktop/automation_scripts/OPS_Automations/OPS_Automations/Ubuntu
 
 set _OLD_VIRTUAL_PATH="$PATH"
 setenv PATH "$VIRTUAL_ENV/"bin":$PATH"
@@ -18,8 +18,8 @@ setenv PATH "$VIRTUAL_ENV/"bin":$PATH"
 set _OLD_VIRTUAL_PROMPT="$prompt"
 
 if (! "$?VIRTUAL_ENV_DISABLE_PROMPT") then
-    set prompt = '(Python_Automations) '"$prompt"
-    setenv VIRTUAL_ENV_PROMPT '(Python_Automations) '
+    set prompt = '(Ubuntu) '"$prompt"
+    setenv VIRTUAL_ENV_PROMPT '(Ubuntu) '
 endif
 
 alias pydoc python -m pydoc

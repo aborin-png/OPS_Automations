@@ -1,0 +1,84 @@
+Metadata-Version: 2.1
+Name: diff-parser
+Version: 1.1
+Summary: Parse git diff data or .diff file. Access a list of properties including filenames, filepath, source-hash, target-hash and more for every file changed.
+Author-email: Shaik Abdus Samad <shaiksamad.dev@gmail.com>
+License: MIT License
+        
+        Copyright (c) 2024 Shaik Abdus Samad
+        
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+        
+        The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.
+        
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+        
+Project-URL: Homepage, https://github.com/shaiksamad/diff-parser.git
+Project-URL: Repository, https://github.com/shaiksamad/diff-parser.git
+Project-URL: Issues, https://github.com/shaiksamad/diff-parser/issues
+Keywords: diff,file differences,diff parser,diffparser,diff file,git diff
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Build Tools
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# diff-parser
+
+diff-parser is a Python package for parsing and representing diff files.
+
+Parse a `git diff` data or `.diff` file. Access a list of properties including filenames, filepath, source-hash, target-hash and more for every file changed.
+
+## Installation
+
+You can install `diff-parser` using pip:
+
+```
+pip install diff-parser
+```
+
+
+## Usage
+
+To use diff-parser, simply import the required modules and classes:
+
+```python
+from diff_parser import Diff
+
+# Example usage:
+diff = Diff("path/to/diff/file.diff")
+for block in diff:
+    print(block.new_filename) # main.py
+    print(block.new_filepath) # /path/to/main.py
+    print(block.old_filename) # main.py
+    print(block.old_filepath) # /path/to/main.py
+    print(block.source_hash)  # abcdef
+    print(block.target_hash)  # uvwxyz
+    print(block.type)         # modified
+    print(block.content)      # None (to be implemented)
+```
+
+## Contributing
+Contributions are welcome! If you find any bugs or have suggestions for improvements, please open an issue on the [GitHub repository](https://github.com/shaiksamad/diff-parser/issues).
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/shaiksamad/diff-parser/blob/main/LICENSE) file for details.
+

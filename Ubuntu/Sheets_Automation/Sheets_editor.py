@@ -35,8 +35,12 @@ RANGE = "A1:H14"
 def update_from_git():
   repo = Repo(Path.Path(__file__).parent.parent.parent)
   origin = repo.remotes.origin
-  temp = origin.pull()
-  return True if len(temp) > 0 else False
+  if origin.fetch() > 0:
+    decision_num = input('An update was found, would you like to update? (y/n): ')
+    if (1 if decision_num == 'y' or decision_num == 'Y' else 0):
+      origin.pull()
+      print('Update Complete!')
+  return 
 
 
 def authenticator():

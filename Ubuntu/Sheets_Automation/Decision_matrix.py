@@ -48,7 +48,7 @@ def multiple_sheets_response(Folder, auth):
 def does_config_exist():
     print('Checking if Config.json exists...')
     if getattr(sys, 'frozen', False):
-        path_outside_repo = Path.Path(sys.executable).parent / 'Config.json'
+        path_outside_repo = Path.Path(sys.executable).parent.parent.parent.parent / 'Config.json'
     else:
         path_outside_repo = Path.Path(__file__).parent.parent.parent.parent / 'Config.json'
         

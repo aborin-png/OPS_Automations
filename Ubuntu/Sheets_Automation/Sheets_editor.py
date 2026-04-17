@@ -105,7 +105,7 @@ def main():
   '''
 
   if update_from_git():
-    print('AUT 10')
+    print('You found my secret sauce!!!')
     return
 
 

@@ -35,15 +35,19 @@ RANGE = "A1:H14"
 def update_from_git():
   repo = Repo(Path.Path(__file__).parent.parent.parent)
   origin = repo.remotes.origin
-  fetch_info = origin.fetch()
-  print(fetch_info)
-  print('AUT 9')
-  if len(fetch_info) > 0:
+  origin.fetch()
+
+  local_vers = repo.head.commit
+  remote_vers = repo.commit('origin/' + repo.active_branch.name)
+
+  if local_vers != remote_vers:
     decision_num = input('An update was found, would you like to update? (y/n): ')
-    if (1 if decision_num == 'y' or decision_num == 'Y' else 0):
+    if decision_num.lower() == 'y':
       origin.pull()
       print('Update Complete! Please restart the program.')
       return True
+  else:
+    print("You're on the latest version!")
   return False
 
 

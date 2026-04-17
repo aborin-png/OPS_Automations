@@ -47,7 +47,7 @@ ZONE_NAMES = {
 
 CONFIG_TEMPALTE =  {
     
-{
+    
     "Options":
     {
         "Robustness":
@@ -121,9 +121,7 @@ CONFIG_TEMPALTE =  {
             }
         }
     }
-}
     
-
 }
 
 '''

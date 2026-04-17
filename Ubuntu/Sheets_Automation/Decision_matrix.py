@@ -46,13 +46,13 @@ def multiple_sheets_response(Folder, auth):
 
 def does_config_exist():
     print('Checking if Config.json exists...')
-    path_outside_repo = Path.Path(__file__).parent.parent.parent / 'Config.json'
+    path_outside_repo = Path.Path(__file__).parent.parent.parent.parent / 'Config.json'
     if path_outside_repo.exists():
         print('Config.json found!')
     else:
         print(f'No Config.json file detected, creating a default at: {path_outside_repo}')
         with open(path_outside_repo, 'w') as config:
-            json.dump(CONFIG_TEMPALTE, config)
+            json.dump(CONFIG_TEMPALTE, config, indent=4)
 
     return path_outside_repo
 

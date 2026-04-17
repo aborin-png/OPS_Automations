@@ -5,7 +5,7 @@ a = Analysis(
     ['Sheets_editor.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('credentials.json', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

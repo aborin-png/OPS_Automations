@@ -33,7 +33,7 @@ import Decision_matrix as Decision
 RANGE = "A1:H14"
 
 def update_from_git():
-  repo = Repo(Path.Path(__file__).parent.parent)
+  repo = Repo(Path.Path(__file__).parent, search_parent_directories=True)
   origin = repo.remotes.origin
   origin.fetch()
 

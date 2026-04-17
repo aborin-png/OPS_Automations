@@ -37,7 +37,7 @@ def update_from_git():
   origin = repo.remotes.origin
   fetch_info = origin.fetch()
   print(fetch_info)
-  print('AUT 8')
+  print('AUT 9')
   if len(fetch_info) > 0:
     decision_num = input('An update was found, would you like to update? (y/n): ')
     if (1 if decision_num == 'y' or decision_num == 'Y' else 0):

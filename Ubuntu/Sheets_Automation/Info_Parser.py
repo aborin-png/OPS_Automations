@@ -26,8 +26,8 @@ def info_parser(string_data):
     '''
     return json.loads(string_data, object_hook=lambda d:SimpleNamespace(**d))
 
-def get_config():
-    with open('Config.json', 'r') as file:
+def get_config(config_path):
+    with open(config_path, 'r') as file:
         file = file.read()
         return json.loads(file, object_hook=lambda d:SimpleNamespace(**d))
     

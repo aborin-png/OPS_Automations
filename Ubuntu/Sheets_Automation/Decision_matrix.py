@@ -9,8 +9,11 @@ The code will then return a list of all decisions the user had made.
 
 import datetime
 import gspread
+import json
+import pathlib as Path
 
 from Info_Parser import get_config
+from glossary import CONFIG_TEMPALTE
 
 #-----------------------------------------------------------------------------------------------------------------------------
 
@@ -41,6 +44,19 @@ def multiple_sheets_response(Folder, auth):
 
     return sheet
 
+def does_config_exist():
+    print('Checking if Config.json exists...')
+    path_outside_repo = Path.Path(__file__).parent.parent.parent / 'Config.json'
+    if path_outside_repo.exists():
+        print('Config.json found!')
+    else:
+        print(f'No Config.json file detected, creating a default at: {path_outside_repo}')
+        with open(path_outside_repo, 'w') as config:
+            json.dump(CONFIG_TEMPALTE, config)
+
+    return path_outside_repo
+
+
 #-----------------------------------------------------------------------------------------------------------------------------
 
 def decision_handler(auth):
@@ -51,7 +67,8 @@ def decision_handler(auth):
     The code will also link the dataset to be extracted from SWI depending on the which sheet is selected. 
     '''
 
-    config_options = get_config().Options
+    path_to_config = does_config_exist()
+    config_options = get_config(path_to_config).Options
     option_list = []
     count = 0
     

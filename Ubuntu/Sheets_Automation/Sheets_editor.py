@@ -33,13 +33,13 @@ import Decision_matrix as Decision
 RANGE = "A1:H14"
 
 def update_from_git():
-  repo = Repo(Path.Path(__file__).parent.parent.parent)
+  repo = Repo(Path.Path(__file__).parent.parent)
   origin = repo.remotes.origin
   if len(origin.fetch()) > 0:
     decision_num = input('An update was found, would you like to update? (y/n): ')
     if (1 if decision_num == 'y' or decision_num == 'Y' else 0):
       origin.pull()
-      print('Update Complete!')
+      print('Update Complete! Please restart the program.')
       return True
   return False
 
@@ -95,12 +95,7 @@ def main():
   the new information back to the desired  google sheet. 
   '''
 
-  # if True:
-  #   print(Path.Path(__file__).parent.parent.parent)
-  #   return
-
   if update_from_git():
-    print('Auto update test 7')
     return
 
 

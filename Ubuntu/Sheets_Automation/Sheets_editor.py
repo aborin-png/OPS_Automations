@@ -8,6 +8,7 @@ google sheets doc, duplicating, naming, and finally editing the google sheet wit
 #-----------------------------------------------------------------------------------------------------------------------------
 
 import os
+import sys
 import gspread
 import pathlib as Path
 from git import Repo
@@ -33,7 +34,8 @@ import Decision_matrix as Decision
 RANGE = "A1:H14"
 
 def update_from_git():
-  repo = Repo(Path.Path(__file__).parent, search_parent_directories=True)
+  start_path = Path.Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path.Path(__file__).parent
+  repo = Repo(start_path, search_parent_directories=True)
   origin = repo.remotes.origin
   origin.fetch()
 

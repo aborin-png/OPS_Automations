@@ -6,25 +6,22 @@ google sheets doc, duplicating, naming, and finally editing the google sheet wit
 '''
 
 #-----------------------------------------------------------------------------------------------------------------------------
+#region Includes
 
 import os
 import sys
 import gspread
 import pathlib as Path
+import webbrowser
 from git import Repo
 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-
 
 import Info_Parser
 import glossary as Gloss
 import Decision_matrix as Decision
-# import OPS_Automations.Ubuntu.Storage.updater as update
 
+#endregion
 #-----------------------------------------------------------------------------------------------------------------------------
 
 #region Auxiliary Functions
@@ -34,6 +31,11 @@ import Decision_matrix as Decision
 RANGE = "A1:H14"
 
 def update_from_git():
+  '''
+  This code is responsible for updating the code base by checking if there is a more recent pull from github.
+  This code will find the repo folder that was created when the initial repo was cloned, search if that repo
+  has a more recent push to it, and finally pull that change and apply it to the current code base. 
+  '''
   start_path = Path.Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path.Path(__file__).parent
   repo = Repo(start_path, search_parent_directories=True)
   origin = repo.remotes.origin
@@ -85,11 +87,28 @@ def data_linker(spreadsheet_data, robot_info):
   return updated_spreadsheet
 
 
-def sheet_duplicator(sheet, worksheet, data, option_name):
+def worksheet_duplicator(sheet, worksheet, data, option_name):
   '''
   This simple code is responsible for taking in a worksheet template, duplicating it, then renaming the duplicate to properly match the test.
+  This code is also responsible for handling duplicate worksheets and the following exceptions that the instance causes. 
   '''
-  return sheet.duplicate_sheet(worksheet.id, 2, new_sheet_name = f'{option_name} | {data[0].data} | {data[5].data} | {data[8].data}')
+  sheet_name = f'{option_name} | {data[0].data} | {data[5].data} | {data[8].data}'
+  count = 1
+  flag = 0
+  while True:
+    try:
+      if count > 1 and not flag:
+        if input("This sheet is a duplicate, would you like to continue? (y/n)").lower() == 'n':
+          return None
+        else: flag = 1
+
+      dup_sheet = sheet.duplicate_sheet(worksheet.id, 2, new_sheet_name = sheet_name)
+      return dup_sheet
+    except gspread.exceptions.APIError:
+      # print(err)
+      sheet_name = f'{option_name} | {data[0].data} | {data[5].data} | {data[8].data} ({count})'
+      count += 1
+  
       
 #endregion
 
@@ -115,11 +134,13 @@ def main():
     
     sheet, worksheet, config_data, option_name = user_requests
 
-    sheet = auth.open(title=sheet)
+    # sheet = auth.open(title=sheet)
     worksheet = sheet.worksheet(worksheet)
 
     robot_info = Info_Parser.robot_info(config_data=config_data)
-    worksheet = sheet_duplicator(sheet, worksheet, robot_info, option_name)
+    worksheet = worksheet_duplicator(sheet, worksheet, robot_info, option_name)
+    if worksheet == None:
+      return
 
     values = worksheet.get(RANGE)
     if not values:
@@ -129,7 +150,7 @@ def main():
     updated_values = data_linker(values, robot_info)
 
     worksheet.update(updated_values, RANGE)
-
+    webbrowser.open(sheet.url)
       
   except HttpError as err:
       print(err)

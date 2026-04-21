@@ -6,6 +6,7 @@ The code will then return a list of all decisions the user had made.
 '''
 
 #-----------------------------------------------------------------------------------------------------------------------------
+#region Includes
 
 import datetime
 import sys
@@ -13,10 +14,14 @@ import gspread
 import json
 import pathlib as Path
 
+from googleapiclient.discovery import build
+
 from Info_Parser import get_config
 from glossary import CONFIG_TEMPALTE
 
+#endregion
 #-----------------------------------------------------------------------------------------------------------------------------
+#region Auxiliary Functions
 
 def multiple_sheets_response(Folder, auth):
     '''
@@ -35,7 +40,7 @@ def multiple_sheets_response(Folder, auth):
         option_list.append(file)
 
     while True:
-            user_in = int(input('Please select which Google Sheet you like to use: ')) - 1
+            user_in = int(input('Please select which Google Sheet you would like to use: ')) - 1
             
             if user_in + 1 <= len(option_list):
                 sheet = option_list[user_in]['name']
@@ -46,6 +51,12 @@ def multiple_sheets_response(Folder, auth):
     return sheet
 
 def does_config_exist():
+    '''
+    This code is used for checking of a config file exists and, if one does not exist, creates a 
+    default one that can be edited. 
+    The correct location for the config file is outside of the OPS_Automations folder when the repo
+    is first cloned from github.
+    '''
     print('Checking if Config.json exists...')
     if getattr(sys, 'frozen', False):
         path_outside_repo = Path.Path(sys.executable).parent.parent.parent.parent / 'Config.json'
@@ -61,8 +72,9 @@ def does_config_exist():
 
     return path_outside_repo
 
-
+#endregion
 #-----------------------------------------------------------------------------------------------------------------------------
+#region Decision Handler
 
 def decision_handler(auth):
     '''
@@ -82,15 +94,26 @@ def decision_handler(auth):
         print(f'{count+1}: {option}')
         count += 1
 
-    selected_option = option_list[int(input('Please select which Google Sheet option you would like to use: ')) - 1][1]
+    selected_option = option_list[int(input('Please select which test type you would like to run: ')) - 1][1]
     sheet = selected_option.Sheet
 
 
     if hasattr(sheet, 'Template'):
-        response = input(f'A template Sheet is present ("{sheet.Template}"), would you like to create a new Google sheet? (y/n): ')
-        sheet = sheet.Template if response == 'y' or response == 'Y' else multiple_sheets_response(sheet.Folder, auth)
-    
-    if sheet == 'Robustness SQA testing sheet':
+        response = input(f'A template Sheet is present ("{sheet.Template.Name}"), would you like to create a new Google sheet? (y/n): ')
+
+        if response.lower() == 'y':
+
+            drive = build('drive', 'v3', credentials = auth.http_client.auth)
+
+            new_sheet = drive.files().copy(fileId= sheet.Template.Key, body = {'name': input("What would you like to name the new Google Sheet: ")}, supportsAllDrives=True).execute()
+            sheet = auth.open_by_key(new_sheet['id'])
+        else:
+            sheet = auth.open(title=multiple_sheets_response(sheet.Folder, auth))
+    else:
+        sheet = auth.open(title=sheet)
+
+
+    if selected_option.Sheet == 'Robustness SQA testing sheet':
         worksheet_options = config_options.Robustness.Worksheet
         robustness_list = []
 

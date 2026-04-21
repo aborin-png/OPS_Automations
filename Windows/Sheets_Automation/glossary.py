@@ -45,6 +45,79 @@ ZONE_NAMES = {
     62  : 'Cell 0 (POST)'
 }
 
+CONFIG_TEMPALTE =  {
+    
+    
+    
+    "Options": {
+        "Robustness": {
+            "Name": "Robustness",
+            "Sheet": "Robustness SQA testing sheet",
+            "Worksheet": {
+                "Cell": "CELL TEST TEMPLATE",
+                "Dock": "DOCK TEST TEMPLATE"
+            },
+            "Data": {
+                "Robot": "data.description.nickname",
+                "Serial:": "data.description.robotSerial",
+                "SW Version": "data.release.releaseInfo.version",
+                "Battery Firmware": "data.status.battery.bms1FirmwareVersion",
+                "Battery % Started": "data.status.battery.soc",
+                "Dock #": "ZONE_NAMES[data.zoneConnectionStatus.safetydStatus.zoneId] if data.zoneConnectionStatus.zoneState else 'None'",
+                "Y0 Version": "f'{data.status.safetyState.onRobotVersion.fwMajorVersion}.0.{data.status.safetyState.onRobotVersion.apiMajorVersion}.0'",
+                "Z0 Version": "f'{data.status.safetyState.z0Version.fwMajorVersion}.{data.status.safetyState.z0Version.fwMinorVersion}.{data.status.safetyState.z0Version.apiMajorVersion}.0' if data.zoneConnectionStatus.zoneState else '0.0.0.0'",
+                "Date:": "datetime.datetime.now().strftime('%m/%d/%Y')"
+            }
+        },
+        "Performance": {
+            "Name": "Performance",
+            "Sheet": {
+                "Template": {
+                    "Name": "Testing Template",
+                    "Key": "1G2Zsxxu4F5Au7WyIFWe4A0m4umpXo8BmgL70VSy3Q-s"
+                },
+                "Folder": "1Wr5w9mU5XLzIYRJHEArpZMOcSY-9ZtdQ"
+            },
+            "Worksheet": "Template",
+            "Data": {
+                "Robot": "data.description.nickname",
+                "Serial:": "data.description.robotSerial",
+                "SW Version": "data.release.releaseInfo.version",
+                "Battery Firmware": "data.status.battery.bms1FirmwareVersion",
+                "Battery % Started": "data.status.battery.soc",
+                "Dock #": "ZONE_NAMES[data.zoneConnectionStatus.safetydStatus.zoneId] if data.zoneConnectionStatus.zoneState else 'None'",
+                "Y0 Version": "f'{data.status.safetyState.onRobotVersion.fwMajorVersion}.0.{data.status.safetyState.onRobotVersion.apiMajorVersion}.0'",
+                "Z0 Version": "f'{data.status.safetyState.z0Version.fwMajorVersion}.{data.status.safetyState.z0Version.fwMinorVersion}.{data.status.safetyState.z0Version.apiMajorVersion}.0' if data.zoneConnectionStatus.zoneState else '0.0.0.0'",
+                "Date:": "datetime.datetime.now().strftime('%m/%d/%Y')"
+            }
+        },
+        "Endurance": {
+            "Name": "Endurance",
+            "Sheet": {
+                "Template": {
+                    "Name": "Testing Template",
+                    "Key": "1G2Zsxxu4F5Au7WyIFWe4A0m4umpXo8BmgL70VSy3Q-s"
+                },
+                "Folder": "1Wr5w9mU5XLzIYRJHEArpZMOcSY-9ZtdQ"
+            },
+            "Worksheet": "Template",
+            "Data": {
+                "Robot": "data.description.nickname",
+                "Serial:": "data.description.robotSerial",
+                "SW Version": "data.release.releaseInfo.version",
+                "Battery Firmware": "data.status.battery.bms1FirmwareVersion",
+                "Battery % Started": "data.status.battery.soc",
+                "Dock #": "ZONE_NAMES[data.zoneConnectionStatus.safetydStatus.zoneId] if data.zoneConnectionStatus.zoneState else 'None'",
+                "Y0 Version": "f'{data.status.safetyState.onRobotVersion.fwMajorVersion}.0.{data.status.safetyState.onRobotVersion.apiMajorVersion}.0'",
+                "Z0 Version": "f'{data.status.safetyState.z0Version.fwMajorVersion}.{data.status.safetyState.z0Version.fwMinorVersion}.{data.status.safetyState.z0Version.apiMajorVersion}.0' if data.zoneConnectionStatus.zoneState else '0.0.0.0'",
+                "Date:": "datetime.datetime.now().strftime('%m/%d/%Y')"
+            }
+        }
+    }
+
+    
+}
+
 '''
 This is the class structure that the data extracted from SWI follows,
 Additional functions can be added but the only part that is fully utilized is it the init function.

@@ -6,11 +6,14 @@ Scraping data from many aspects of SWI can be added fairly easily
 '''
 
 #-----------------------------------------------------------------------------------------------------------------------------
+#region Includes
 
 import requests
 from bs4 import BeautifulSoup
 
+#endregion
 #-----------------------------------------------------------------------------------------------------------------------------
+#region API_Fetch
 
 def API_Fetch():
 
@@ -31,6 +34,7 @@ def API_Fetch():
     
     except requests.exceptions.RequestException as e:
         print(f"Encountered an error when accessing the url: {e}")
+        print('Please make sure the robot is on and not booting up.')
         return None
 
 

@@ -8,9 +8,12 @@ This is an OPS repo that contains automation code for day to day testing and ope
 
 Depending on the OS that is being used, the installation method may vary. Ultimately, all that is needed is to clone the repo in any location, preferably in a dedicated folder, and run the downloaded executable.
 
->[!IMPORTANT]
->On first run of each script, a default config will be created and is able to be edited. However, the location of the Config.json file CANNOT be changed or the script will not work.
->Likewise, do NOT move the executable files to different locations after cloning the repo. For useful organization tips, refer to [Organization Tips](https://github.com/aborin-png/OPS_Automations/tree/Releases#organization-tips)
+>[!WARNING]
+>On first run of any script, a default config will be created if a config does not already exist.
+>
+> **However, the location of the Config.json file CANNOT be changed or the script will NOT work.**
+>
+>Likewise, **do NOT move the executable files to different locations after cloning the repo**. For useful organization tips, refer to [Organization Tips](https://github.com/aborin-png/OPS_Automations/tree/Releases#organization-tips)
 
 ## Linux
 

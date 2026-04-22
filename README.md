@@ -10,7 +10,7 @@ Depending on the OS that is being used, the installation method may vary. Ultima
 
 >[!IMPORTANT]
 >On first run of each script, a default config will be created and is able to be edited. However, the location of the Config.json file CANNOT be changed or the script will not work.
->Likewise, do NOT move the executable files to different locations after cloning the repo. For useful organization tips, refer to 
+>Likewise, do NOT move the executable files to different locations after cloning the repo. For useful organization tips, refer to [Organization Tips](https://github.com/aborin-png/OPS_Automations/edit/Releases/README.md#organization-tips)
 
 ## Linux
 

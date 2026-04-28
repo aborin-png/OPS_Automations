@@ -18,7 +18,9 @@ Depending on the OS that is being used, the installation method may vary. Ultima
 >[!IMPORTANT]
 >This script currently runs using a Terminal format and responses to the script are in the format of numbered options that the user can choose by inputting the option's respective number.
 >
->For instance: For Robustness testing, the corresponding number to that option is "1", so inputting 1 into the terminal will select that option. 
+>For instance: For Robustness testing, the corresponding number to that option is "1", so inputting 1 into the terminal will select that option.
+>
+>A more permanent dedicated GUI for all current and future scripts is in development
 
 ## Linux
 

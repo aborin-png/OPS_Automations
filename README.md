@@ -15,6 +15,11 @@ Depending on the OS that is being used, the installation method may vary. Ultima
 >
 >Likewise, **do NOT move the executable files to different locations after cloning the repo**. For useful organization tips, refer to [Organization Tips](https://github.com/aborin-png/OPS_Automations/tree/Releases#organization-tips)
 
+>[!IMPORTANT]
+>This script currently runs using a Terminal format and responses to the script are in the format of numbered options that the user can choose by inputting the option's respective number.
+>
+>For instance: For Robustness testing, the corresponding number to that option is "1", so inputting 1 into the terminal will select that option. 
+
 ## Linux
 
 1. Make sure that your system is up to date using `sudo apt update & sudo apt upgrade -y`
@@ -25,7 +30,7 @@ Depending on the OS that is being used, the installation method may vary. Ultima
    
 3. Clone the repo into this newly created directory using: `git clone https://github.com/aborin-png/OPS_Automations.git`
    
-4. Navigate to the location of the script you would like to run and run the script.
+4. Navigate to the location of the script you would like to run and run the script by using `./(Name of the script)`.
 
    For example when trying to run Sheet Editor:
 
@@ -77,3 +82,25 @@ Since the executable and Config.json files cannot be moved once they are cloned 
 3. This new file can now be moved anywhere on the computer
 
 4. (Optional) Repeat this process for the Config.json file
+
+# Current Features
+
+## Sheets Editor
+
+This script is used for creating and editing Google Sheet files and extracting robot information automatically. 
+
+>[!IMPORTANT]
+>Make sure that the robot is on and is reachable through SWI, otherwise the script will fail when attempting to reach the robot.
+>
+>Additionally, for **BEST** results when testing inside a dock or cell, connect the robot to the zone controller before running the script. This will allow the script the zone information along with the robot information.  
+
+It's current primary function is to poll the user for what kind of test they are intending to run and which robot they would like to use and duplicates a Google Sheet file using a template and populates the sheet with live robot information. All aspects of which Google Sheet to be used and what data to extract from the robot can be configured through the Config.json file.
+
+To begin, 
+
+1. Start by running the script as stated in [Getting Started](https://github.com/aborin-png/OPS_Automations#getting-started).
+
+2. Then, follow the prompts in the terminal to select the right test and robot.
+
+3. Finally, the script will create the sheet with the proper information and automatically open the sheet that was just created. 
+

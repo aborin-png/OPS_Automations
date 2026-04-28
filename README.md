@@ -24,7 +24,7 @@ Depending on the OS that is being used, the installation method may vary. Ultima
 
 ## Linux
 
-1. Make sure that your system is up to date using `sudo apt update & sudo apt upgrade -y`
+1. Make sure that your system is up to date using `sudo apt update && sudo apt upgrade -y`
    
 2. Create a folder in any directory desired and name it what you like, then cd into the newly created directory.
   

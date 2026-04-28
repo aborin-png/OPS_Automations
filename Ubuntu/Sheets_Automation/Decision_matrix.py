@@ -39,16 +39,16 @@ def multiple_sheets_response(Folder, auth):
         print(f'{count + 1}: {file['name']}')
         option_list.append(file)
 
-    while True:
-            user_in = int(input('Please select which Google Sheet you would like to use: ')) - 1
+    # while True:
+    #         user_in = int(input('Please select which Google Sheet you would like to use: ')) - 1
             
-            if user_in + 1 <= len(option_list):
-                sheet = option_list[user_in]['name']
-                break 
-            else:
-                print('This is not a valid option.')
+    #         if user_in + 1 <= len(option_list):
+    #             sheet = option_list[user_in]['name']
+    #             break 
+    #         else:
+    #             print('This is not a valid option.')
 
-    return sheet
+    return option_list
 
 def does_config_exist():
     '''

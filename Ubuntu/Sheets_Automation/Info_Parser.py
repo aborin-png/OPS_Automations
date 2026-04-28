@@ -40,9 +40,6 @@ def config_recontruction(dict_to_reconstruct, data):
     return [Gloss.Glossary(location=location, data = eval(data_member)) for location, data_member in vars(dict_to_reconstruct).items()]
 
 
-    
-
-
 def robot_info(config_data):
     '''
     This acts as a "master" to encapsulate the other two auxiliary functions into one function. This returns an

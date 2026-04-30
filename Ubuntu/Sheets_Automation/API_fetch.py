@@ -15,9 +15,9 @@ from bs4 import BeautifulSoup
 #-----------------------------------------------------------------------------------------------------------------------------
 #region API_Fetch
 
-def API_Fetch():
+def API_Fetch(robot):
 
-    robot = input("Please enter which robot you would like info on: ")
+    # robot = input("Please enter which robot you would like info on: ")
 
     url = f"https://{robot}.stretch/api/info/robot-info"
 

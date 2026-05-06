@@ -35,6 +35,9 @@ def get_test_title(api, test_id):
 
     return types.SimpleNamespace(**api.send_get(f'get_test/{test_id}')).title
 
+def get_full_test_info(api, project_id):
+    
+
 
 
 

@@ -1,9 +1,10 @@
-import pathlib
+import pathlib as Path
 import json
 import threading
 import customtkinter as ctk
 import sys
 from types import SimpleNamespace
+from git import Repo
 
 sys.path.append('Ubuntu/Sheets_Automation')
 
@@ -19,7 +20,7 @@ import glossary
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-CONFIG_PATH = pathlib.Path(sys.executable).parent.parent.parent.parent / 'Config.json'
+CONFIG_PATH = Path.Path(sys.executable).parent.parent.parent.parent / 'Config.json'
 
 TAB_COLORS = {
     "Sheet Editor": "#5B9BD5",
@@ -31,6 +32,7 @@ TAB_COLORS = {
 STATUS_COLORS = {
     # 1: ('#f20798', 'MAJOR FAULT'),
     0: ("#CC3333", "FAULTED"),
+    1: ('#ffeb12', 'UNKNOWN'),
     2: ("#CCAA00", "IDLE"),
     3: ("#2E8B3A", "ACTIVE"),
     4: ('#3429ff', 'AUTONOMOUS READY'),
@@ -39,12 +41,16 @@ STATUS_COLORS = {
 
 CHARGE_STATUS = {
     0: ("#CC3333", 'NOT CHARGING'),
-    1: ('#1a6e31', 'SHORE POWER'),
+    1: ('#308aff', 'SHORE POWER'),
+    2: ('#ffeb12', 'UNKNOWN'),
     3: ('#23cf51', 'FAST CHARGER'),
+    4: ('#ffeb12', 'UNKNOWN'),
     5: ('#CC3333', 'OFFLINE'),
 }
 
 ROBOT_CARD_COLS = 4
+
+ROBOT_OFFLINE = []
 
 
 class SettingsWindow(ctk.CTkToplevel):
@@ -53,18 +59,38 @@ class SettingsWindow(ctk.CTkToplevel):
         self.title("Settings")
         self.geometry("400x300")
         self.resizable(False, False)
-        self.grab_set()
 
         ctk.CTkLabel(self, text="Settings", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 10))
         ctk.CTkLabel(self, text="No settings configured yet.", text_color="gray").pack(pady=10)
         ctk.CTkButton(self, text="Close", command=self.destroy).pack(pady=20)
 
+        self.wait_visibility()
+        self.grab_set()
+
+class UpdateWindow(ctk.CTkToplevel):
+    def __init__(self, parent, on_update):
+        super().__init__(parent)
+        self.title("OPS Automations Update")
+        self.geometry("420x220")
+        self.resizable(False, False)
+
+        ctk.CTkLabel(self, text="Update Available", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 10))
+        self.msg_label = ctk.CTkLabel(self, text="Would you like to update to the latest version?", text_color="gray")
+        self.msg_label.pack(pady=10)
+
+        btn_frame = ctk.CTkFrame(self, fg_color="transparent")
+        btn_frame.pack(pady=20)
+        self.update_btn = ctk.CTkButton(btn_frame, text="Update", command=lambda: on_update(self))
+        self.update_btn.pack(side="left", padx=8)
+        ctk.CTkButton(btn_frame, text="Cancel", command=self.destroy, fg_color="gray40").pack(side="left", padx=8)
+
+        self.wait_visibility()
+        self.grab_set()
+
 
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-
-        # self.
 
         self.title("OPS Automations")
         self.geometry("900x600")
@@ -82,6 +108,8 @@ class App(ctk.CTk):
 
         self.build_afse_monitoring()
         self.build_Sheet_Editor()
+
+        self.after(300, lambda: threading.Thread(target=self.update_from_git, daemon=True).start())
 
 #----------------------------------------------------------------------------------------------------------------------------------------
 #region Baseline Functions
@@ -131,8 +159,40 @@ class App(ctk.CTk):
         
     def open_settings(self):
         if not hasattr(self, "_settings_win") or not self._settings_win.winfo_exists():
-            self._settings_win = SettingsWindow(self)
-        self._settings_win.focus()
+            SettingsWindow(self)
+
+
+    '''
+        This code is responsible for updating the code base by checking if there is a more recent pull from github.
+        This code will find the repo folder that was created when the initial repo was cloned, search if that repo
+        has a more recent push to it, and finally pull that change and apply it to the current code base. 
+    '''
+    def update_from_git(self):
+        start_path = Path.Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path.Path(__file__).parent
+        try:
+            repo = Repo(start_path, search_parent_directories=True)
+            origin = repo.remotes.origin
+            origin.fetch()
+
+            local_vers = repo.head.commit
+            remote_vers = repo.commit('origin/' + repo.active_branch.name)
+
+            if local_vers != remote_vers:
+                self.after(0, lambda: UpdateWindow(self, on_update=lambda win: self._start_pull(origin, win)))
+        except Exception as e:
+            print(f"Git update check failed: {e}")
+
+    def _start_pull(self, origin, win):
+        win.update_btn.configure(state="disabled", text="Updating...")
+        win.msg_label.configure(text="Pulling latest changes...")
+        threading.Thread(target=self._do_pull, args=(origin, win), daemon=True).start()
+
+    def _do_pull(self, origin, win):
+        try:
+            origin.pull()
+            self.after(0, lambda: win.msg_label.configure(text="Update complete. Please restart the application."))
+        except Exception as e:
+            self.after(0, lambda: win.msg_label.configure(text=f"Update failed: {e}", text_color="#CC3333"))
 
     
 #endregion
@@ -187,7 +247,11 @@ class App(ctk.CTk):
         self.sheet_options = self.get_sheet_options(test_type=test_type)[0]
         self._sheet_type_var.set(self.sheet_options[0] if self.sheet_options else "")
         self._sheet_type_menu.configure(values=self.sheet_options)
-        
+
+        worksheet_options = self.get_worksheet_options()[0]
+        self.worksheet_template_var.set(worksheet_options[0] if worksheet_options else "")
+        self._worksheet_menu.configure(values=worksheet_options)
+
         self.test_data = self.selected_option['Data']
         
     def on_template_checked(self):
@@ -200,11 +264,33 @@ class App(ctk.CTk):
 
     def on_sheet_selection(self, _:str):
         self.sheet_selection = self._sheet_type_var.get()
+        self.sheet_data = self.selected_option['Data']
+        self.sheet_name = self.selected_option['Name']
         print(self.sheet_selection)
 
     def on_worksheet_selection(self, _:str):
         self.worksheet_selection = self.worksheet_template_var.get()
         print(self.worksheet_selection)
+
+    def check_robot_online(self):
+        nickname = self._robot_entry_var.get().strip().lower()
+        if not nickname:
+            self._robot_status_label.configure(text="", text_color="white")
+            return
+        self._robot_entry_var.set(nickname)
+        self._robot_status_label.configure(text="Checking...", text_color="gray70")
+        threading.Thread(target=self._robot_check_worker, args=(nickname,), daemon=True).start()
+
+    def _robot_check_worker(self, nickname):
+        result = API_fetch.API_Fetch(nickname, ROBOT_OFFLINE)
+        self.after(0, lambda: self._robot_check_result(nickname, result))
+
+    def _robot_check_result(self, nickname, result):
+        if result is None:
+            self._robot_status_label.configure(text="✗ Robot offline or unreachable", text_color="#CC3333")
+        else:
+            self.robot_selection = nickname
+            self._robot_status_label.configure(text="✓ Robot is Online", text_color="#2E8B3A")
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------
@@ -242,17 +328,23 @@ class App(ctk.CTk):
         self._template_checkbox.grid_remove()
 
 
+        ctk.CTkLabel(self.sheet_frame, text="Sheet:").grid(
+            row=2, column=0, padx=(12, 8), pady=(0, 12), sticky="w"
+        )
         sheet_options = self.get_sheet_options(test_type=self._test_type_var.get())[0]
         self._sheet_type_var = ctk.StringVar(value=sheet_options[0] if sheet_options else "")
         self._sheet_type_menu = ctk.CTkOptionMenu(
             self.sheet_frame,
             values=sheet_options,
             variable=self._sheet_type_var,
-            command= self.on_sheet_selection
+            command=self.on_sheet_selection
         )
         self._sheet_type_menu.grid(row=2, column=1, columnspan=2, padx=12, pady=(0, 12), sticky="w")
 
 
+        ctk.CTkLabel(self.sheet_frame, text="Worksheet:").grid(
+            row=3, column=0, padx=(12, 8), pady=(0, 12), sticky="w"
+        )
         worksheet_options = self.get_worksheet_options()[0]
         self.worksheet_template_var = ctk.StringVar(value=worksheet_options[0] if worksheet_options else "")
         self._worksheet_menu = ctk.CTkOptionMenu(
@@ -261,7 +353,24 @@ class App(ctk.CTk):
             variable=self.worksheet_template_var,
             command=self.on_worksheet_selection
         )
-        self._worksheet_menu.grid(row= 3, column = 1, columnspan= 2, padx = 12, pady=(0,12), sticky = 'w')
+        self._worksheet_menu.grid(row=3, column=1, columnspan=2, padx=12, pady=(0, 12), sticky="w")
+
+        ctk.CTkLabel(self.sheet_frame, text="Robot:").grid(
+            row=4, column=0, padx=(12, 8), pady=(0, 12), sticky="w"
+        )
+        self._robot_entry_var = ctk.StringVar()
+        self._robot_entry = ctk.CTkEntry(
+            self.sheet_frame,
+            textvariable=self._robot_entry_var,
+            placeholder_text="Enter robot nickname",
+            width=180,
+        )
+        self._robot_entry.grid(row=4, column=1, padx=(0, 8), pady=(0, 12), sticky="w")
+        self._robot_entry.bind("<Return>", lambda _: self.check_robot_online())
+        self._robot_entry.bind("<FocusOut>", lambda _: self.check_robot_online())
+
+        self._robot_status_label = ctk.CTkLabel(self.sheet_frame, text="")
+        self._robot_status_label.grid(row=4, column=2, padx=(0, 12), pady=(0, 12), sticky="w")
 
         # self.update_template_visibility()
 
@@ -276,9 +385,12 @@ class App(ctk.CTk):
     def get_robot_api(self):
         robot_api = []
         robot_list = self._config['AFSE']['Robots']
+        
         for robot in robot_list:
-            api = API_fetch.API_Fetch(robot)
+            api = API_fetch.API_Fetch(robot, ROBOT_OFFLINE)
             if api != None: 
+                if robot in ROBOT_OFFLINE:
+                    ROBOT_OFFLINE.remove(robot)
                 data = Info_Parser.info_parser(api)
                 robot_api.append([
                     data.description.nickname,
@@ -287,6 +399,8 @@ class App(ctk.CTk):
                     data.status.battery.chargerMode
                     ])
             else:
+                if robot not in ROBOT_OFFLINE:
+                    ROBOT_OFFLINE.append(robot)
                 robot_api.append([
                     robot,
                     0,

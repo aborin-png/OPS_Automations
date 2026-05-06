@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 #-----------------------------------------------------------------------------------------------------------------------------
 #region API_Fetch
 
-def API_Fetch(robot):
+def API_Fetch(robot, robot_offline):
 
     # robot = input("Please enter which robot you would like info on: ")
 
@@ -23,7 +23,7 @@ def API_Fetch(robot):
 
     try: 
         requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
-        response = requests.get(url, verify= False)
+        response = requests.get(url, verify=False, timeout=5)
         response.raise_for_status()
 
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -33,8 +33,11 @@ def API_Fetch(robot):
         return text
     
     except requests.exceptions.RequestException as e:
-        print(f"Encountered an error when accessing the url: {e}")
-        print('Please make sure the robot is on and not booting up.')
-        return None
+        if robot in robot_offline:
+            return None
+        else:
+            print(f"Encountered an error when accessing the url: {e}")
+            print('Please make sure the robot is on and not booting up.')
+            return None
 
 

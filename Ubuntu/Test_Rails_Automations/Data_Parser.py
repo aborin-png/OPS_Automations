@@ -16,7 +16,12 @@ def results_extractor(api, project_id):
         # print(result)
         result = types.SimpleNamespace(**result)
         test_id = result.test_id
-        status = gloss.status_codes[result.status_id]
+
+        if result.status_id != None:
+            status = gloss.status_codes[result.status_id]
+        else:
+            status = ''
+            
         title = get_test_title(api, test_id)
         url = f'https://testrails.bostondynamics.com/testrail/index.php?/tests/view/{test_id}&group_by=tests:id&group_order=asc&group_id=-1'
         comment = ''

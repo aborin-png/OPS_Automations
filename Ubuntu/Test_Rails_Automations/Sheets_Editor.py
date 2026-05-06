@@ -2,6 +2,7 @@ import URL_Fetch
 import Data_Parser
 
 import gspread
+import webbrowser
 
 TITLE = 'B3'
 FAILED = 'D10'
@@ -50,6 +51,8 @@ if __name__ == '__main__':
 
     worksheet.update([[suite_title]], TITLE)
     sheets_populator(organized_results, worksheet=worksheet)
+
+    webbrowser.oepn(sheet.url)
     
     
     # print(f'Title: {result.title} | ID: {result.id} | Status: {result.status} | URL: {result.url} | Comment: {result.comment}\n')

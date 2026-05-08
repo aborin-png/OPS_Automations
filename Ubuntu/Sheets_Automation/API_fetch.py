@@ -23,7 +23,7 @@ def API_Fetch(robot, robot_offline):
 
     try: 
         requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
-        response = requests.get(url, verify=False, timeout=5)
+        response = requests.get(url, verify=False, timeout=1)
         response.raise_for_status()
 
         soup = BeautifulSoup(response.text, 'html.parser')

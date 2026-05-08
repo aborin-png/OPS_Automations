@@ -37,15 +37,16 @@ def config_recontruction(dict_to_reconstruct, data):
     and itemize into a class structure.
     '''
     
-    return [Gloss.Glossary(location=location, data = eval(data_member)) for location, data_member in vars(dict_to_reconstruct).items()]
+    items = dict_to_reconstruct.items() if isinstance(dict_to_reconstruct, dict) else vars(dict_to_reconstruct).items()
+    return [Gloss.Glossary(location=location, data=eval(data_member)) for location, data_member in items]
 
 
-def robot_info(config_data):
+def robot_info(config_data, robot):
     '''
     This acts as a "master" to encapsulate the other two auxiliary functions into one function. This returns an
     array of class items containing relevant information.
     '''
-    data = info_parser(API_Fetch())
+    data = info_parser(API_Fetch(robot=robot, robot_offline=[]))
 
 
     return config_recontruction(config_data, data=data)

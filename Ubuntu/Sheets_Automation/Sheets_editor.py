@@ -115,7 +115,7 @@ def worksheet_duplicator(sheet, worksheet, data, option_name):
 #-----------------------------------------------------------------------------------------------------------------------------
 #region Main Code
 
-def main():
+def sheet_editor(auth, sheet, worksheet, config_data, option_name, robot):
   '''
   This is the main code of the script.
   This code is responsible for polling the user to decide on what actions to be taken and for which sheets/worksheets to use. 
@@ -123,21 +123,21 @@ def main():
   the new information back to the desired  google sheet. 
   '''
 
-  if update_from_git():
-    print('You found my secret sauce!!!')
-    return
+  # if update_from_git():
+  #   print('You found my secret sauce!!!')
+  #   return
 
 
   try:
-    auth = authenticator()
-    user_requests = Decision.decision_handler(auth=auth)
+    # auth = authenticator()
+    # user_requests = Decision.decision_handler(auth=auth)
     
-    sheet, worksheet, config_data, option_name = user_requests
+    
 
     # sheet = auth.open(title=sheet)
     worksheet = sheet.worksheet(worksheet)
 
-    robot_info = Info_Parser.robot_info(config_data=config_data)
+    robot_info = Info_Parser.robot_info(config_data=config_data, robot=robot)
     worksheet = worksheet_duplicator(sheet, worksheet, robot_info, option_name)
     if worksheet == None:
       return

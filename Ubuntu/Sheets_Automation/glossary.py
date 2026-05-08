@@ -45,10 +45,10 @@ ZONE_NAMES = {
     62  : 'Cell 0 (POST)'
 }
 
+CONFIG_VERSION = "1.1.0"
+
 CONFIG_TEMPALTE =  {
-    
-    
-    
+    "Version": CONFIG_VERSION,
     "Options": {
         "Robustness": {
             "Name": "Robustness",
@@ -113,9 +113,20 @@ CONFIG_TEMPALTE =  {
                 "Date:": "datetime.datetime.now().strftime('%m/%d/%Y')"
             }
         }
+    },
+    "AFSE": {
+        "Robots": [
+            "sb20",
+            "sb12",
+            "sb24",
+            "sb13",
+            "sb16",
+            "sb25",
+            "sb17",
+            "sb18"
+            
+        ]
     }
-
-    
 }
 
 '''

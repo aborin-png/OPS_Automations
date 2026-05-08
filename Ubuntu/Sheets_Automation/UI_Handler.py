@@ -109,6 +109,69 @@ class UpdateWindow(ctk.CTkToplevel):
         self.grab_set()
 
 
+class ProgressWindow(ctk.CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Generating Sheet")
+        self.geometry("420x150")
+        self.resizable(False, False)
+
+        ctk.CTkLabel(self, text="Generating Sheet...", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(20, 10))
+
+        self._progress_bar = ctk.CTkProgressBar(self, width=380)
+        self._progress_bar.set(0)
+        self._progress_bar.pack(pady=(0, 8), padx=20)
+
+        self._status_label = ctk.CTkLabel(self, text="Starting...", text_color="gray70")
+        self._status_label.pack(pady=(0, 16))
+
+        self.wait_visibility()
+        self.grab_set()
+
+    def set_progress(self, value: float, message: str):
+        self._progress_bar.set(value)
+        self._status_label.configure(text=message)
+
+class ConfigUpdateWindow(ctk.CTkToplevel):
+    def __init__(self, parent, current_version, required_version, on_update):
+        super().__init__(parent)
+        self.title("Config Version Mismatch")
+        self.geometry("460x280")
+        self.resizable(False, False)
+
+        ctk.CTkLabel(self, text="Config Version Mismatch", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(20, 4))
+
+        ver_current = current_version if current_version is not None else "not found"
+        ctk.CTkLabel(
+            self,
+            text=f"Your version: {ver_current}     Required version: {required_version}",
+            text_color="gray70"
+        ).pack(pady=(0, 12))
+
+        warning_frame = ctk.CTkFrame(self, fg_color="#3d2000", corner_radius=6)
+        warning_frame.pack(fill="x", padx=20, pady=(0, 12))
+        ctk.CTkLabel(
+            warning_frame,
+            text="⚠  Updating will overwrite your Config.json.\nBack up any custom changes before continuing.",
+            text_color="#ffcc44",
+            justify="center",
+        ).pack(pady=10, padx=12)
+
+        self.msg_label = ctk.CTkLabel(self, text="")
+        self.msg_label.pack(pady=(0, 6))
+
+        btn_frame = ctk.CTkFrame(self, fg_color="transparent")
+        btn_frame.pack(pady=(0, 16))
+        self.update_btn = ctk.CTkButton(btn_frame, text="Update Config", command=lambda: on_update(self))
+        self.update_btn.pack(side="left", padx=8)
+        self.keep_btn = ctk.CTkButton(btn_frame, text="Keep Current", command=self.destroy, fg_color="gray40")
+        self.keep_btn.pack(side="left", padx=8)
+
+        self.wait_visibility()
+        self.grab_set()
+
+
+
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -121,7 +184,7 @@ class App(ctk.CTk):
         self.grid_columnconfigure(1, weight=0)
         self.grid_rowconfigure(0, weight=1)
 
-        self._config = self.load_config()
+        self.config = self.load_config()
         self.authentication = Sheets_editor.authenticator()
 
         self.build_main_area()
@@ -131,6 +194,7 @@ class App(ctk.CTk):
         self.build_Sheet_Editor()
 
         self.after(300, lambda: threading.Thread(target=self.update_from_git, daemon=True).start())
+        self.after(500, self._check_config_version)
 
 #----------------------------------------------------------------------------------------------------------------------------------------
 #region Baseline Functions
@@ -214,8 +278,24 @@ class App(ctk.CTk):
             self.after(0, lambda: win.msg_label.configure(text="Update complete. Please restart the application."))
         except Exception as e:
             self.after(0, lambda: win.msg_label.configure(text=f"Update failed: {e}", text_color="#CC3333"))
-
     
+    def _check_config_version(self):
+        current = self.config.get("Version")
+        required = glossary.CONFIG_VERSION
+        if current != required:
+            ConfigUpdateWindow(self, current, required, on_update=self._do_config_update)
+
+    def _do_config_update(self, win):
+        win.keep_btn.grid_remove()
+        win.update_btn.grid_remove()
+        with open(CONFIG_PATH, 'w') as f:
+            json.dump(glossary.CONFIG_TEMPALTE, f, indent=4)
+        self.config = self.load_config()
+        win.msg_label.configure(text="Config updated. The application will close soon.", text_color="#2E8B3A")
+        
+        win.after(1500, win.destroy)
+        self.destroy()
+
 #endregion
 #----------------------------------------------------------------------------------------------------------------------------------------
 ############################################################    SHEETS EDITOR    ########################################################
@@ -226,12 +306,12 @@ class App(ctk.CTk):
 #Auxiliary Functions
     
     def get_config_option(self, test_name: str):
-        self.selected_option = self._config.get('Options', {}).get(test_name, {})
+        self.selected_option = self.config.get('Options', {}).get(test_name, {})
 
 
 
     def has_template(self, test_name: str) -> bool:
-        option = self._config.get("Options", {}).get(test_name, {})
+        option = self.config.get("Options", {}).get(test_name, {})
         sheet = option.get("Sheet", {})
         return isinstance(sheet, dict) and "Template" in sheet
     
@@ -350,19 +430,43 @@ class App(ctk.CTk):
         self._generate_btn.configure(state="normal" if ready else "disabled")
 
     def on_generate(self):
-        if self._use_template_var.get():
-            sheet = self.create_sheet_from_template()
-        else:
-            sheet = self.authentication.open(title=self.sheet_selection)
+        self._generate_btn.configure(state="disabled")
+        progress_win = ProgressWindow(self)
 
-        Sheets_editor.sheet_editor(
-            self.authentication,
-            sheet,
-            self.worksheet_selection,
-            self.test_data,
-            self.sheet_name,
-            self.robot_selection
-        )
+        use_template = self._use_template_var.get()
+        sheet_title = self.sheet_selection
+
+        def report(value, message):
+            def _update():
+                if progress_win.winfo_exists():
+                    progress_win.set_progress(value, message)
+            self.after(0, _update)
+
+        def run():
+            completed = [False]
+            try:
+                report(0.1, "Opening Google Sheet...")
+                if use_template:
+                    sheet = self.create_sheet_from_template()
+                else:
+                    sheet = self.authentication.open(title=sheet_title)
+
+                Sheets_editor.sheet_editor(
+                    self.authentication, sheet, self.worksheet_selection,
+                    self.test_data, self.sheet_name, self.robot_selection,
+                    progress_cb=report
+                )
+                completed[0] = True
+            except Exception as e:
+                print(f"Generate failed: {e}")
+            finally:
+                def _finish():
+                    if progress_win.winfo_exists():
+                        progress_win.after(800 if completed[0] else 0, progress_win.destroy)
+                    self._generate_btn.configure(state="normal")
+                self.after(0, _finish)
+
+        threading.Thread(target=run, daemon=True).start()
         
 
 
@@ -371,7 +475,7 @@ class App(ctk.CTk):
 
     def build_Sheet_Editor(self):
         sheet_tab = self.tab_view.tab("Sheet Editor")
-        options = list(self._config.get("Options", {}).keys())
+        options = list(self.config.get("Options", {}).keys())
 
         self.sheet_frame = ctk.CTkFrame(sheet_tab, fg_color="gray20")
         self.sheet_frame.pack(fill="x", padx=12, pady=(0, 12))
@@ -474,6 +578,7 @@ class App(ctk.CTk):
 
         self._new_sheet_name_var.trace_add("write", lambda *_: self._check_generate_ready())
 
+#endregion
 #----------------------------------------------------------------------------------------------------------------------------------------
 ############################################################    AFSE MONITORING    ######################################################
 #----------------------------------------------------------------------------------------------------------------------------------------
@@ -484,7 +589,7 @@ class App(ctk.CTk):
 
     def get_robot_api(self):
         robot_api = []
-        robot_list = self._config['AFSE']['Robots']
+        robot_list = self.config['AFSE']['Robots']
         
         for robot in robot_list:
             api = API_fetch.API_Fetch(robot, ROBOT_OFFLINE)
@@ -596,8 +701,7 @@ class App(ctk.CTk):
 
 
 #endregion    
-#----------------------------------------------------------------------------------------------------------------------------------------
-#region Main
+
 
 if __name__ == "__main__":
     app = App()

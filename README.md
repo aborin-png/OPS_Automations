@@ -32,11 +32,11 @@ Depending on the OS that is being used, the installation method may vary. Ultima
    
 3. Clone the repo into this newly created directory using: `git clone https://github.com/aborin-png/OPS_Automations.git`
    
-4. Navigate to the location of the script you would like to run and run the script by using `./(Name of the script)`.
+4. Navigate to the "Ubuntu" directory and run the GUI script `./UI_Handler`.
 
    For example when trying to run Sheet Editor:
 
-   Run `cd OPS_Automations/Ubuntu/Sheets_Automation/` to navigate to the correct directory then run the script by using `./Sheets_editor`
+   Run `cd OPS_Automations/Ubuntu/` to navigate to the correct directory then run the script by using `./UI_Handler`
 
 
 ## Windows
@@ -56,7 +56,7 @@ Depending on the OS that is being used, the installation method may vary. Ultima
      
 4. In the terminal that has opened up, type `git clone https://github.com/aborin-png/OPS_Automations.git` to clone the repo
 
-5. Finally, navigate to whichever program you want to run and simply double click the .exe file to run the scripts
+5. Finally, navigate to Windows directory and run the GUI script by double clicking on the .exe file
 
 
 # Organization Tips
@@ -102,7 +102,11 @@ To begin,
 
 1. Start by running the script as stated in [Getting Started](https://github.com/aborin-png/OPS_Automations#getting-started).
 
-2. Then, follow the prompts in the terminal to select the right test and robot.
+2. Then, follow the prompts in the GUI to select the right test and robot.
 
-3. Finally, the script will create the sheet with the proper information and automatically open the sheet that was just created. 
+3. Finally, the script will create the worksheet with the proper information and automatically open the worksheet that was just created.
+
+## AFSE Monitoring
+
+This tab acts as a dashboard to monitor robots with some basic, but expanding, metrics. These basic metrics inlcude the robot's name, its current charge level, whether the robot is currently charging and with what charger, and the robot's current status. This dashboard is module and any robot can be added or removed from the current list by going into the config and adding/removing robot nick names from the "AFSE" section. A feature to easily add and remove robots will be added in the future. 
 

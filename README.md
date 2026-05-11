@@ -2,7 +2,7 @@
 
 # Overview
 
-This is an OPS repo that contains automation code for day to day testing and operations involving basic data collection from robots.
+This is a Stretch OPS repo that contains automation code for day to day testing and operations involving basic data collection from robots.
 
 # Getting Started
 
@@ -14,13 +14,6 @@ Depending on the OS that is being used, the installation method may vary. Ultima
 > **However, the location of the Config.json file CANNOT be changed or the script will NOT work.**
 >
 >Likewise, **do NOT move the executable files to different locations after cloning the repo**. For useful organization tips, refer to [Organization Tips](https://github.com/aborin-png/OPS_Automations/tree/Releases#organization-tips)
-
->[!IMPORTANT]
->This script currently runs using a Terminal format and responses to the script are in the format of numbered options that the user can choose by inputting the option's respective number.
->
->For instance: For Robustness testing, the corresponding number to that option is "1", so inputting 1 into the terminal will select that option.
->
->A more permanent dedicated GUI for all current and future scripts is in development
 
 ## Linux
 
@@ -41,7 +34,7 @@ Depending on the OS that is being used, the installation method may vary. Ultima
 
 ## Windows
 
-1. Create a new filder wherever is most comfortable and name it what you like.
+1. Create a new folder wherever is most comfortable and name it what you like.
    
 2. Confirm that git is installed and Windows can access it.
 

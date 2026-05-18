@@ -13,8 +13,9 @@ from functools import reduce
 import datetime
 
 
-import glossary as Gloss
-from API_fetch import API_Fetch
+from Sheets_Automation import glossary as Gloss
+from Sheets_Automation.API_fetch import API_Fetch
+
 
 ZONE_NAMES = Gloss.ZONE_NAMES
 #-----------------------------------------------------------------------------------------------------------------------------

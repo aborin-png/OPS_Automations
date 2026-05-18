@@ -18,9 +18,9 @@ from tkinter import messagebox
 
 from googleapiclient.errors import HttpError
 
-import Info_Parser
-import glossary as Gloss
-import Decision_matrix as Decision
+from Sheets_Automation import Info_Parser
+from Sheets_Automation import glossary as Gloss
+from Sheets_Automation import Decision_matrix as Decision
 
 #endregion
 #-----------------------------------------------------------------------------------------------------------------------------

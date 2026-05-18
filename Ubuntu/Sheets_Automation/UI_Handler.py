@@ -6,10 +6,7 @@ import sys
 from types import SimpleNamespace
 from git import Repo, InvalidGitRepositoryError
 
-# if not getattr(sys, 'frozen', False):
-#     sys.path.append('Ubuntu/Sheets_Automation')
 
-# from OPS_Automations.Ubuntu.Sheets_Automation.Decision_matrix import does_config_exist
 import Decision_matrix 
 import Sheets_editor
 import API_fetch
@@ -21,7 +18,7 @@ import glossary
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-def _find_config() -> Path.Path:
+def find_config() -> Path.Path:
     start = Path.Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path.Path(__file__).parent
     for directory in [start, *start.parents]:
         
@@ -41,7 +38,7 @@ def _find_config() -> Path.Path:
 
     return path_outside_repo
 
-CONFIG_PATH = _find_config()
+CONFIG_PATH = find_config()
 
 TAB_COLORS = {
     "Sheet Editor": "#5B9BD5",
@@ -534,6 +531,7 @@ class App(ctk.CTk):
             variable=self._sheet_type_var,
             command=self.on_sheet_selection
         )
+        
         self._sheet_type_menu.grid(row=2, column=1, columnspan=2, padx=12, pady=(0, 12), sticky="w")
 
 

@@ -1,13 +1,35 @@
 import pathlib as Path
 import json
+import os
 import threading
+import tkinter as tk
 import customtkinter as ctk
 import sys
 from types import SimpleNamespace
 from git import Repo, InvalidGitRepositoryError
 
+import cv2
+from PIL import Image, ImageTk
 
-from Sheets_Automation import Sheets_editor, Decision_matrix, API_fetch, Info_Parser, glossary
+from Sheets_Automation import Sheets_editor, Decision_matrix, API_fetch, Info_Parser
+import glossary
+
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
+
+CAMERA_IP = "10.224.131.2"
+CAMERA_USER = "admin"
+CAMERA_PASSWORD = "admin1"
+CAMERA_PROFILE = "sub"            # "sub" (640x360 @ 10fps) or "main" (4K @ 25fps)
+CAMERA_DEFAULT_CHANNEL = 1        
+CAMERA_CHANNELS = glossary.CAMERA_CHANNELS   # robot nickname -> 1-based NVR channel number
+
+VIDEO_W, VIDEO_H = 640, 360
+
+ZONE_NAMES = glossary.ZONE_NAMES
+
+
+def build_camera_url(channel: int) -> str:
+    return f"rtsp://{CAMERA_USER}:{CAMERA_PASSWORD}@{CAMERA_IP}:554//h264Preview_{channel:02d}_{CAMERA_PROFILE}"
 
 
 
@@ -47,7 +69,7 @@ TAB_COLORS = {
 STATUS_COLORS = {
     # 1: ('#f20798', 'MAJOR FAULT'),
     0: ("#CC3333", "FAULTED"),
-    1: ('#ffeb12', 'UNKNOWN'),
+    1: ('#CC3333', 'E-STOPPED'),
     2: ("#CCAA00", "IDLE"),
     3: ("#2E8B3A", "ACTIVE"),
     4: ('#3429ff', 'AUTONOMOUS READY'),
@@ -67,6 +89,7 @@ ROBOT_CARD_COLS = 4
 
 ROBOT_OFFLINE = []
 
+#region Window Classes
 
 class SettingsWindow(ctk.CTkToplevel):
     def __init__(self, parent):
@@ -166,37 +189,96 @@ class ConfigUpdateWindow(ctk.CTkToplevel):
 
 
 class RobotDetailWindow(ctk.CTkToplevel):
-    def __init__(self, parent, robot_name, charge, color_code, charge_code):
+    def __init__(self, parent, robot_name, charge, color_code, charge_code, zone_id=None, camera_channel=CAMERA_DEFAULT_CHANNEL):
         super().__init__(parent)
         self.title(robot_name)
-        self.geometry("360x320")
+        self._zone_id = zone_id
+        self._camera_url = build_camera_url(camera_channel)
+        self.geometry("720x780")
         self.resizable(False, False)
 
-        ctk.CTkLabel(self, text=robot_name, font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 12))
+        ctk.CTkLabel(self, text=robot_name, font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(16, 8))
 
-        self.charge_label = ctk.CTkLabel(self, text="", font=ctk.CTkFont(size=36, weight="bold"))
+        video_container = ctk.CTkFrame(self, width=VIDEO_W, height=VIDEO_H, fg_color="black")
+        video_container.pack(pady=(0, 12))
+        video_container.pack_propagate(False)
+        self.video_label = tk.Label(video_container, bg="black", fg="white", text="Connecting to camera...")
+        self.video_label.pack(fill="both", expand=True)
+
+        self.charge_label = ctk.CTkLabel(self, text="", font=ctk.CTkFont(size=32, weight="bold"))
         self.charge_label.pack()
-        ctk.CTkLabel(self, text="Charge", text_color="gray70").pack(pady=(0, 8))
+        ctk.CTkLabel(self, text="Charge", text_color="gray70").pack(pady=(0, 4))
         self.charge_status_label = ctk.CTkLabel(self, text="")
-        self.charge_status_label.pack(pady=(0, 12))
+        self.charge_status_label.pack(pady=(0, 8))
 
         self.status_badge = ctk.CTkFrame(self, corner_radius=6)
-        self.status_badge.pack(padx=20, pady=(0, 16), fill="x")
+        self.status_badge.pack(padx=20, pady=(0, 8), fill="x")
         self.status_label = ctk.CTkLabel(self.status_badge, text="", text_color="white", font=ctk.CTkFont(size=14, weight="bold"))
-        self.status_label.pack(pady=8)
+        self.status_label.pack(pady=6)
 
-        ctk.CTkButton(self, text="Close", command=self.destroy).pack(pady=(8, 16))
+        self.zone_label = ctk.CTkLabel(self, text="", text_color="gray80", font=ctk.CTkFont(size=12))
+        self.zone_label.pack(pady=(4, 4))
 
-        self.update_data(charge, color_code, charge_code)
+        ctk.CTkButton(self, text="Close", command=self._on_close).pack(pady=(4, 12))
 
-    def update_data(self, charge, color_code, charge_code):
+        self.update_data(charge, color_code, charge_code, zone_id)
+
+        self._stream_stop = threading.Event()
+        self._frame_lock = threading.Lock()
+        self._latest_frame = None
+        self._photo = None
+
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+        if zone_id and zone_id != 'None':
+            threading.Thread(target=self._stream_worker, daemon=True).start()
+            self.after(50, self._poll_frame)
+        else:
+            self.video_label.configure(text="Not connected to Zone")
+
+    def update_data(self, charge, color_code, charge_code, zone_id=None):
+        self._zone_id = zone_id
         status_color, status_label = STATUS_COLORS[color_code]
         charge_color, charge_status = CHARGE_STATUS[charge_code]
         self.charge_label.configure(text=f"{charge:.0f}%")
         self.charge_status_label.configure(text=charge_status, text_color=charge_color)
         self.status_badge.configure(fg_color=status_color)
         self.status_label.configure(text=status_label)
+        zone_text = ZONE_NAMES.get(zone_id, 'Not in a Zone')
+        self.zone_label.configure(text=zone_text)
 
+    def _stream_worker(self):
+        cap = cv2.VideoCapture(self._camera_url, cv2.CAP_FFMPEG)
+        try:
+            while not self._stream_stop.is_set():
+                ret, frame = cap.read()
+                if not ret:
+                    continue
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                pil = Image.fromarray(rgb)
+                if pil.size != (VIDEO_W, VIDEO_H):
+                    pil = pil.resize((VIDEO_W, VIDEO_H), Image.BILINEAR)
+                with self._frame_lock:
+                    self._latest_frame = pil
+        finally:
+            cap.release()
+
+    def _poll_frame(self):
+        if self._stream_stop.is_set() or not self.winfo_exists():
+            return
+        with self._frame_lock:
+            pil = self._latest_frame
+            self._latest_frame = None
+        if pil is not None:
+            photo = ImageTk.PhotoImage(pil)
+            self._photo = photo
+            self.video_label.configure(image=photo, text="")
+        self.after(50, self._poll_frame)
+
+    def _on_close(self):
+        self._stream_stop.set()
+        self.destroy()
+
+#endregion
 
 class App(ctk.CTk):
     def __init__(self):
@@ -329,7 +411,9 @@ class App(ctk.CTk):
 #region Sheets Editor
 
 #----------------------------------------------------------------------------------------------------------------------------------------
-#Auxiliary Functions
+
+
+    #region Auxiliary Functions
     
     def get_config_option(self, test_name: str):
         self.selected_option = self.config.get('Options', {}).get(test_name, {})
@@ -497,9 +581,13 @@ class App(ctk.CTk):
         threading.Thread(target=run, daemon=True).start()
         
 
+    #endregion
+
 
 #----------------------------------------------------------------------------------------------------------------------------------------
-#Main Functions
+
+
+    #region Main Functions
 
     def build_Sheet_Editor(self):
         sheet_tab = self.tab_view.tab("Sheet Editor")
@@ -606,7 +694,9 @@ class App(ctk.CTk):
         self._generate_btn.grid(row=5, column=1, padx=(0, 12), pady=(8, 12), sticky="w")
 
         self._new_sheet_name_var.trace_add("write", lambda *_: self._check_generate_ready())
+    #endregion
 
+    
 #endregion
 #----------------------------------------------------------------------------------------------------------------------------------------
 ############################################################    AFSE MONITORING    ######################################################
@@ -630,8 +720,10 @@ class App(ctk.CTk):
                     data.description.nickname,
                     data.status.battery.soc,
                     data.status.lightingState.color,
-                    data.status.battery.chargerMode
+                    data.status.battery.chargerMode,
+                    data.zoneConnectionStatus.safetydStatus.zoneId if data.zoneConnectionStatus.zoneState else 'None'
                     ])
+                # print(data.zoneConnectionStatus.safetydStatus.zoneId if data.zoneConnectionStatus.zoneState else 'None')
             else:
                 if robot not in ROBOT_OFFLINE:
                     ROBOT_OFFLINE.append(robot)
@@ -639,7 +731,8 @@ class App(ctk.CTk):
                     robot,
                     0,
                     5,
-                    5
+                    5,
+                    'None'
                 ])
             
         return robot_api
@@ -654,7 +747,8 @@ class App(ctk.CTk):
     def afse_apply_refresh(self, robot_api):
         if robot_api is not None:
             self.latest_robot_api = robot_api
-            for i, (name, charge, color_code, charge_code) in enumerate(robot_api):
+            for i, (name, charge, color_code, charge_code, zone_id) in enumerate(robot_api):
+                # print(f"Robot: {name}, Zone ID: {zone_id}")
                 if i >= len(self.afse_instances):
                     break
                 status_color, status_label = STATUS_COLORS[color_code]
@@ -662,18 +756,22 @@ class App(ctk.CTk):
 
                 win = self._robot_detail_windows.get(name)
                 if win is not None and win.winfo_exists():
-                    win.update_data(charge, color_code, charge_code)
+                    win.update_data(charge, color_code, charge_code, zone_id)
 
                 self.afse_instances[i][0].configure(text=f'{charge:.0f}%')
                 self.afse_instances[i][1].configure(fg_color=status_color)
                 self.afse_instances[i][2].configure(text=status_label)
                 self.afse_instances[i][3].configure(text= charge_status, text_color= charge_color)
+                zone_text = ZONE_NAMES.get(zone_id, 'Not in a Zone')
+                self.afse_instances[i][4].configure(text=zone_text)
         self.after(5000, self.afse_schedule_refresh)
 
     def afse_fetch_data(self):
         try:
             robot_api = self.get_robot_api()
         except Exception:
+            import traceback
+            traceback.print_exc()
             robot_api = None
 
         return robot_api
@@ -701,7 +799,7 @@ class App(ctk.CTk):
             label.grid(row=0, column=0, columnspan=ROBOT_CARD_COLS, pady=20)
             self._afse_cards.append(label)
         else:
-            for i, (name, charge, color_code, charge_code) in enumerate(robot_api):
+            for i, (name, charge, color_code, charge_code, zone_id) in enumerate(robot_api):
                 status_color, status_label = STATUS_COLORS[color_code]
                 charge_color, charge_status = CHARGE_STATUS[charge_code]
 
@@ -718,11 +816,15 @@ class App(ctk.CTk):
                 robot_charge_status.pack(pady=(0, 8))
 
                 status_badge = ctk.CTkFrame(card, fg_color=status_color, corner_radius=6)
-                status_badge.pack(pady=(0, 12), padx=12, fill="x")
+                status_badge.pack(pady=(0, 6), padx=12, fill="x")
                 robot_status = ctk.CTkLabel(status_badge, text=status_label, text_color="white", font=ctk.CTkFont(size=12, weight="bold"))
                 robot_status.pack(pady=6)
 
-                self.afse_instances.append([robot_charge, status_badge, robot_status, robot_charge_status])
+                zone_text = ZONE_NAMES.get(zone_id, 'Not in a Zone')
+                robot_zone = ctk.CTkLabel(card, text=zone_text, text_color="gray80", font=ctk.CTkFont(size=12))
+                robot_zone.pack(pady=(0, 10))
+
+                self.afse_instances.append([robot_charge, status_badge, robot_status, robot_charge_status, robot_zone])
                 self._bind_card_click(card, i)
 
 
@@ -744,12 +846,13 @@ class App(ctk.CTk):
     def _open_robot_window(self, index):
         if index >= len(self.latest_robot_api):
             return
-        name, charge, color_code, charge_code = self.latest_robot_api[index]
+        name, charge, color_code, charge_code, zone_id = self.latest_robot_api[index]
         existing = self._robot_detail_windows.get(name)
         if existing is not None and existing.winfo_exists():
             existing.focus()
             return
-        self._robot_detail_windows[name] = RobotDetailWindow(self, name, charge, color_code, charge_code)
+        channel = CAMERA_CHANNELS.get(zone_id, CAMERA_DEFAULT_CHANNEL)
+        self._robot_detail_windows[name] = RobotDetailWindow(self, name, charge, color_code, charge_code, zone_id=zone_id, camera_channel=channel)
 
 
 

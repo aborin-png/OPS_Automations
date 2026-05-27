@@ -19,7 +19,7 @@ from tkinter import messagebox
 from googleapiclient.errors import HttpError
 
 from Sheets_Automation import Info_Parser
-from Sheets_Automation import glossary as Gloss
+import glossary as Gloss
 from Sheets_Automation import Decision_matrix as Decision
 
 #endregion
@@ -103,7 +103,7 @@ def worksheet_duplicator(sheet, worksheet, data, option_name):
           return None
         else: flag = 1
 
-      dup_sheet = sheet.duplicate_sheet(worksheet.id, 2, new_sheet_name = sheet_name)
+      dup_sheet = sheet.duplicate_sheet(worksheet.id, 3, new_sheet_name = sheet_name)
       return dup_sheet
     except gspread.exceptions.APIError:
       # print(err)

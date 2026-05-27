@@ -17,7 +17,7 @@ import pathlib as Path
 from googleapiclient.discovery import build
 
 from Sheets_Automation.Info_Parser import get_config
-from Sheets_Automation.glossary import CONFIG_TEMPALTE
+from glossary import CONFIG_TEMPALTE
 
 #endregion
 #-----------------------------------------------------------------------------------------------------------------------------

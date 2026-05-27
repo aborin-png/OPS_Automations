@@ -20,16 +20,19 @@ def API_Fetch(robot, robot_offline):
     # robot = input("Please enter which robot you would like info on: ")
 
     url = f"https://{robot}.stretch/api/info/robot-info"
+    # url = "https://internal.bosdyn.com/robot-password/lookup?serial=ssd-122341400713"
 
     try: 
         requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
         response = requests.get(url, verify=False, timeout=1)
         response.raise_for_status()
-
+        # print(response.text)
         soup = BeautifulSoup(response.text, 'html.parser')
-
+        
+        # print(soup.prettify())
         text = soup.get_text(separator = '\n', strip=True)
 
+        # print(text)
         return text
     
     except requests.exceptions.RequestException as e:
@@ -41,3 +44,4 @@ def API_Fetch(robot, robot_offline):
             return None
 
 
+API_Fetch("",[])

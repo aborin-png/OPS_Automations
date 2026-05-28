@@ -14,6 +14,10 @@ from PIL import Image, ImageTk
 from Sheets_Automation import Sheets_editor, Decision_matrix, API_fetch, Info_Parser
 import glossary
 
+sys.path.insert(0, str(Path.Path(__file__).resolve().parent / "POST_Testing"))
+import Robot_comms
+import robot_password
+
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
 CAMERA_IP = "10.224.131.2"
@@ -192,9 +196,10 @@ class RobotDetailWindow(ctk.CTkToplevel):
     def __init__(self, parent, robot_name, charge, color_code, charge_code, zone_id=None, camera_channel=CAMERA_DEFAULT_CHANNEL):
         super().__init__(parent)
         self.title(robot_name)
+        self._robot_name = robot_name
         self._zone_id = zone_id
         self._camera_url = build_camera_url(camera_channel)
-        self.geometry("720x780")
+        self.geometry("720x860")
         self.resizable(False, False)
 
         ctk.CTkLabel(self, text=robot_name, font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(16, 8))
@@ -216,8 +221,23 @@ class RobotDetailWindow(ctk.CTkToplevel):
         self.status_label = ctk.CTkLabel(self.status_badge, text="", text_color="white", font=ctk.CTkFont(size=14, weight="bold"))
         self.status_label.pack(pady=6)
 
-        self.zone_label = ctk.CTkLabel(self, text="", text_color="gray80", font=ctk.CTkFont(size=12))
-        self.zone_label.pack(pady=(4, 4))
+        self.zone_label = ctk.CTkLabel(self, text="", text_color="gray80", font=ctk.CTkFont(size=20, weight="bold"))
+        self.zone_label.pack(pady=(8, 12))
+
+        action_frame = ctk.CTkFrame(self, fg_color="transparent")
+        action_frame.pack(pady=(4, 8))
+        ctk.CTkButton(
+            action_frame, text="Restart AFSE", width=140,
+            command=lambda: self._run_robot_action("Restart AFSE", Robot_comms.restart_AFSE),
+        ).pack(side="left", padx=4)
+        ctk.CTkButton(
+            action_frame, text="Stow Robot", width=140,
+            command=lambda: self._run_robot_action("Stow Robot", Robot_comms.stow_robot),
+        ).pack(side="left", padx=4)
+        ctk.CTkButton(
+            action_frame, text="Stop Behavior", width=140,
+            command=lambda: self._run_robot_action("Stop Behavior", Robot_comms.stop_behavior),
+        ).pack(side="left", padx=4)
 
         ctk.CTkButton(self, text="Close", command=self._on_close).pack(pady=(4, 12))
 
@@ -273,6 +293,19 @@ class RobotDetailWindow(ctk.CTkToplevel):
             self._photo = photo
             self.video_label.configure(image=photo, text="")
         self.after(50, self._poll_frame)
+
+    def _run_robot_action(self, action_name, action_func):
+        def worker():
+            try:
+                password = robot_password.get_robot_password(self._robot_name)
+                if not password:
+                    print(f"{action_name}: could not retrieve robot password")
+                    return
+                action_func(self._robot_name, password)
+            except Exception:
+                import traceback
+                traceback.print_exc()
+        threading.Thread(target=worker, daemon=True).start()
 
     def _on_close(self):
         self._stream_stop.set()
@@ -570,6 +603,8 @@ class App(ctk.CTk):
                 )
                 completed[0] = True
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 print(f"Generate failed: {e}")
             finally:
                 def _finish():

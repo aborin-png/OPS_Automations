@@ -1,122 +1,132 @@
 """
 Robot Password Lookup via internal.bosdyn.com.
 
-Attaches to Google Chrome via CDP. If Chrome isn't already listening on
---remote-debugging-port=9222, the script launches it for you. Either way,
-the lookup tab is opened inside your normal Chrome (with your work
-Google account session intact) and closed at the end.
-
-Caveat: Chrome can only bind a debug port at process startup. If Chrome
-is already running without the flag, launching another `google-chrome`
-just piggybacks on the existing process and no debug port appears. In
-that case the script raises ChromeNotDebuggableError and tells you to
-close all Chrome windows and try again.
+Reads your Chrome cookies (from any profile under ~/.config/google-chrome)
+and uses them to fetch the Robot Password Lookup page directly with
+`requests`. If your Knox session has expired (or the robot-password app
+hasn't been authorized yet), the script opens the lookup URL in your
+default browser, prompts you to click AUTHORIZE, then polls for the new
+cookie and resumes automatically.
 """
+import http.cookiejar
+import html
+import pathlib
 import re
-import shutil
-import socket
-import subprocess
 import sys
 import time
+import webbrowser
 
-from playwright.sync_api import (
-    sync_playwright,
-    TimeoutError as PlaywrightTimeoutError,
-)
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
+import browser_cookie3
+import requests
+
+from Sheets_Automation.API_fetch import API_Fetch
+from Sheets_Automation.Info_Parser import info_parser
 
 
 LOOKUP_URL = "https://internal.bosdyn.com/robot-password/lookup"
-CDP_HOST = "localhost"
-CDP_PORT = 9222
-CDP_URL = f"http://{CDP_HOST}:{CDP_PORT}"
+KNOX_HOST = "knox.bostondynamics.com"
+AUTH_POLL_INTERVAL = 2.0     # seconds between cookie re-checks
+AUTH_TIMEOUT = 180.0         # max seconds to wait for the user to authorize
+CHROME_CONFIG = pathlib.Path.home() / ".config" / "google-chrome"
 
 
-class ChromeNotDebuggableError(RuntimeError):
+class AuthenticationRequired(RuntimeError):
     pass
 
 
-def _is_port_open(host: str, port: int, timeout: float = 0.5) -> bool:
-    try:
-        with socket.create_connection((host, port), timeout=timeout):
-            return True
-    except OSError:
-        return False
+def _chrome_cookie_files() -> list[pathlib.Path]:
+    """Every per-profile Cookies file under the Chrome config dir."""
+    if not CHROME_CONFIG.exists():
+        return []
+    return [
+        d / "Cookies"
+        for d in CHROME_CONFIG.iterdir()
+        if d.is_dir() and (d / "Cookies").exists()
+    ]
 
 
-def _find_chrome_binary() -> str | None:
-    for name in ("google-chrome-stable", "google-chrome", "chrome"):
-        path = shutil.which(name)
-        if path:
-            return path
-    return None
-
-
-def _ensure_chrome_debug_port(wait_timeout: float = 15.0) -> None:
-    if _is_port_open(CDP_HOST, CDP_PORT):
-        return
-
-    binary = _find_chrome_binary()
-    if not binary:
-        raise ChromeNotDebuggableError(
-            "Google Chrome is not installed (no google-chrome binary on PATH)."
-        )
-
-    subprocess.Popen(
-        [binary, f"--remote-debugging-port={CDP_PORT}"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        start_new_session=True,
-    )
-
-    deadline = time.monotonic() + wait_timeout
-    while time.monotonic() < deadline:
-        if _is_port_open(CDP_HOST, CDP_PORT):
-            return
-        time.sleep(0.25)
-
-    raise ChromeNotDebuggableError(
-        f"Launched Chrome but no debug port appeared at {CDP_URL} within "
-        f"{wait_timeout:.0f}s. Chrome is probably already running without "
-        "the debug flag. Close all Chrome windows and try again."
-    )
-
-
-def get_robot_password(serial: str, field: str = "web.bd", timeout_ms: int = 120_000) -> str | None:
-    """
-    Returns the value of `field` for `serial` from the Robot Password
-    Lookup page, or None if the row's value is 'None' or the field
-    isn't present. Returns None on timeout (user didn't authorize).
-
-    Raises ChromeNotDebuggableError if Chrome can't be brought up on
-    the CDP debug port (usually because Chrome is already running
-    without --remote-debugging-port=9222).
-    """
-    _ensure_chrome_debug_port()
-
-    with sync_playwright() as p:
-        browser = p.chromium.connect_over_cdp(CDP_URL, timeout=5000)
-        context = browser.contexts[0] if browser.contexts else browser.new_context()
-        page = context.new_page()
+def _read_cookies(domain: str = "bosdyn.com") -> http.cookiejar.CookieJar:
+    """Combine cookies for `domain` from every Chrome profile we can find."""
+    combined = http.cookiejar.CookieJar()
+    for cookie_file in _chrome_cookie_files():
         try:
-            page.goto(f"{LOOKUP_URL}?serial={serial}")
-            page.wait_for_url(f"{LOOKUP_URL}*", timeout=timeout_ms)
-            page.wait_for_load_state("networkidle")
-            text = page.inner_text("body")
-        except PlaywrightTimeoutError:
-            return None
-        finally:
-            try:
-                page.close()
-            except Exception:
-                pass
+            jar = browser_cookie3.chrome(domain_name=domain, cookie_file=str(cookie_file))
+        except Exception:
+            continue
+        for cookie in jar:
+            combined.set_cookie(cookie)
+    return combined
 
-    match = re.search(rf"^{re.escape(field)}\s+(\S+)", text, re.MULTILINE)
+
+def _fetch_lookup_html(serial: str) -> str | None:
+    """HTML if authenticated, None if redirected to Knox (no/expired session)."""
+    cookies = _read_cookies()
+    r = requests.get(
+        LOOKUP_URL,
+        params={"serial": serial},
+        cookies=cookies,
+        allow_redirects=True,
+        timeout=15,
+    )
+    if KNOX_HOST in r.url:
+        return None
+    r.raise_for_status()
+    return r.text
+
+
+def _parse_field(html_text: str, field: str) -> str | None:
+    text = re.sub(r"<[^>]+>", " ", html_text)
+    text = html.unescape(text)
+    text = re.sub(r"\s+", " ", text)
+    match = re.search(rf"\b{re.escape(field)}\b\s+(\S+)", text)
     if not match:
         return None
     value = match.group(1)
     return None if value == "None" else value
 
 
+def _prompt_authorize(serial: str) -> str:
+    url = f"{LOOKUP_URL}?serial={serial}"
+    profiles = [p.parent.name for p in _chrome_cookie_files()]
+    print(f"Authorization required. Opening {url} — click AUTHORIZE in your browser.")
+    print(f"Searching Chrome profiles: {profiles or '(none found!)'}")
+    webbrowser.open(url)
+
+    deadline = time.monotonic() + AUTH_TIMEOUT
+    while time.monotonic() < deadline:
+        time.sleep(AUTH_POLL_INTERVAL)
+        text = _fetch_lookup_html(serial)
+        if text is not None:
+            print("Authorized. Continuing.")
+            return text
+
+    raise AuthenticationRequired(
+        f"User did not authorize within {AUTH_TIMEOUT:.0f}s."
+    )
+
+
+def get_robot_password(robot: str, field: str = "web.bd") -> str | None:
+    """
+    Returns the value of `field` for `serial` from the Robot Password
+    Lookup page, or None if the row's value is 'None' or the field
+    isn't present.
+
+    On first run (or when the Knox session expires), opens the lookup
+    URL in the user's browser, waits for AUTHORIZE, then resumes.
+    """
+    serial = f'ssd-{info_parser(API_Fetch(robot=robot, robot_offline=[])).description.serial}'
+
+    text = _fetch_lookup_html(serial)
+    if text is None:
+        text = _prompt_authorize(serial)
+    password = _parse_field(text, field)
+    # print(f"Password for {field}: {password}")
+    return password
+
+
 if __name__ == "__main__":
-    serial = sys.argv[1] if len(sys.argv) > 1 else "ssd-122341400713"
-    print(get_robot_password(serial))
+    robot = sys.argv[1] if len(sys.argv) > 1 else "None"
+    field = sys.argv[2] if len(sys.argv) > 2 else "web.bd"
+    print(get_robot_password(robot, field))

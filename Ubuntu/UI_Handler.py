@@ -14,9 +14,9 @@ from PIL import Image, ImageTk
 from Sheets_Automation import Sheets_editor, Decision_matrix, API_fetch, Info_Parser
 import glossary
 
-sys.path.insert(0, str(Path.Path(__file__).resolve().parent / "POST_Testing"))
-import Robot_comms
-import robot_password
+# sys.path.insert(0, str(Path.Path(__file__).resolve().parent / "POST_Testing"))
+from POST_Testing import Robot_comms
+from POST_Testing import robot_password
 
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 

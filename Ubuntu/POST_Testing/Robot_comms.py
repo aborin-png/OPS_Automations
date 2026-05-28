@@ -1,7 +1,11 @@
 import requests
-import robot_password
 import sys
 import json
+
+try:
+    from POST_Testing import robot_password
+except ImportError:
+    import robot_password
 
 
 # Post command for soft reboot using python
@@ -160,15 +164,15 @@ def get_previously_active_behavior(robot, password):
         print(f"Get active behavior request failed: {e}")
         raise
 
-if __name__ == "__main__":
-    robot = sys.argv[1] if len(sys.argv) > 1 else "None"
-    password = robot_password.get_robot_password(robot)
-    if password is None:
-        print("Failed to retrieve robot password. Cannot perform soft reboot.")
-    else:
-        # soft_reboot_api(robot, password)
-        # get_behavior_list(robot, password) 
-        # get_previously_active_behavior(robot, password)
-        # restart_AFSE(robot, password)
-        stow_robot(robot, password)
-        # stop_behavior(robot, password)
+# if __name__ == "__main__":
+#     robot = sys.argv[1] if len(sys.argv) > 1 else "None"
+#     password = robot_password.get_robot_password(robot)
+#     if password is None:
+#         print("Failed to retrieve robot password. Cannot perform soft reboot.")
+#     else:
+#         # soft_reboot_api(robot, password)
+#         # get_behavior_list(robot, password) 
+#         # get_previously_active_behavior(robot, password)
+#         # restart_AFSE(robot, password)
+#         stow_robot(robot, password)
+#         # stop_behavior(robot, password)

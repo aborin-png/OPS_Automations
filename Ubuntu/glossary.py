@@ -10,8 +10,16 @@ import datetime
 #-----------------------------------------------------------------------------------------------------------------------------
 
 '''
+The "global truth" google sheet (STO: Test Cells, Docks, Conveyors, Safety Systems) that
+the GUI scans on startup to build ZONE_NAMES / ZONE_TYPES dynamically. See Sheets_Automation/Zone_scanner.py.
+'''
+STO_SHEET_KEY = "1YQfsfgoX5kXGT3irN0pk-wZOee5WpiXICXXe4N6qRRQ"
+STO_SHEET_GID = 1613910811
+
+'''
 Zone # and the corresponding Dock/Cell name.
-This will be redone with an automatic info scrapper from a premade and upto date google sheet.
+These values are a hardcoded FALLBACK only. On startup the GUI scans the STO sheet above and
+overwrites ZONE_NAMES / ZONE_TYPES in place with the live data; this map is only used if that scan fails.
 '''
 ZONE_NAMES = {
     203 : 'Dock 2',
@@ -42,6 +50,17 @@ ZONE_NAMES = {
     50  : 'Cell 7',
     36  : 'Cell 0 (POST)',
     62  : 'Cell 0 (POST)'
+}
+
+'''
+Zone ID -> 'Dock' or 'Cell'. Used to pick which Reolink camera IP to stream from
+(docks and cells live on separate NVRs / IPs). A zone is a 'Dock' if its name starts with
+"Dock", otherwise it is treated as a 'Cell'. Like ZONE_NAMES, this is a fallback that gets
+overwritten in place by the startup sheet scan.
+'''
+ZONE_TYPES = {
+    zone_id: ('Dock' if name.lower().startswith('dock') else 'Cell')
+    for zone_id, name in ZONE_NAMES.items()
 }
 
 CAMERA_CHANNELS = {               # robot Zone ID -> 1-based NVR channel number

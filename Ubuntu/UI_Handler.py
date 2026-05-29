@@ -3,6 +3,7 @@ import json
 import os
 import threading
 import tkinter as tk
+from tkinter import messagebox
 import customtkinter as ctk
 import sys
 from types import SimpleNamespace
@@ -11,7 +12,7 @@ from git import Repo, InvalidGitRepositoryError
 import cv2
 from PIL import Image, ImageTk
 
-from Sheets_Automation import Sheets_editor, Decision_matrix, API_fetch, Info_Parser
+from Sheets_Automation import Sheets_editor, Decision_matrix, API_fetch, Info_Parser, Zone_scanner
 import glossary
 
 # sys.path.insert(0, str(Path.Path(__file__).resolve().parent / "POST_Testing"))
@@ -20,9 +21,11 @@ from POST_Testing import robot_password
 
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
-CAMERA_IP = "10.224.131.2"
+CAMERA_IP_CELL = "10.224.131.2"
+CAMERA_IP_DOCK = "10.224.131.7"
 CAMERA_USER = "admin"
-CAMERA_PASSWORD = "admin1"
+CAMERA_PASSWORD_CELL = "admin1"
+CAMERA_PASSWORD_DOCK = "admin123"
 CAMERA_PROFILE = "sub"            # "sub" (640x360 @ 10fps) or "main" (4K @ 25fps)
 CAMERA_DEFAULT_CHANNEL = 1        
 CAMERA_CHANNELS = glossary.CAMERA_CHANNELS   # robot nickname -> 1-based NVR channel number
@@ -30,10 +33,15 @@ CAMERA_CHANNELS = glossary.CAMERA_CHANNELS   # robot nickname -> 1-based NVR cha
 VIDEO_W, VIDEO_H = 640, 360
 
 ZONE_NAMES = glossary.ZONE_NAMES
+ZONE_TYPES = glossary.ZONE_TYPES
 
 
-def build_camera_url(channel: int) -> str:
-    return f"rtsp://{CAMERA_USER}:{CAMERA_PASSWORD}@{CAMERA_IP}:554//h264Preview_{channel:02d}_{CAMERA_PROFILE}"
+def build_camera_url(channel: int, zone_id=None) -> str:
+    # Docks and cells stream from separate Reolink NVRs/IPs. Pick the IP based on the
+    # zone's type (defaults to the cell IP for unknown zones).
+    ip = CAMERA_IP_DOCK if ZONE_TYPES.get(zone_id) == 'Dock' else CAMERA_IP_CELL
+    password = CAMERA_PASSWORD_DOCK if ZONE_TYPES.get(zone_id) == 'Dock' else CAMERA_PASSWORD_CELL
+    return f"rtsp://{CAMERA_USER}:{password}@{ip}:554//h264Preview_{channel:02d}_{CAMERA_PROFILE}"
 
 
 
@@ -93,7 +101,7 @@ ROBOT_CARD_COLS = 4
 
 ROBOT_OFFLINE = []
 
-#region Window Classes
+#region GUI Window Classes
 
 class SettingsWindow(ctk.CTkToplevel):
     def __init__(self, parent):
@@ -192,13 +200,204 @@ class ConfigUpdateWindow(ctk.CTkToplevel):
         self.grab_set()
 
 
+class AuthWaitWindow(ctk.CTkToplevel):
+    '''
+    Small status window shown only when robot-password retrieval needs the user to
+    authorize in their browser. Starts on a "waiting for authorization" spinner and is
+    flipped to a green checkmark once the password is retrieved and the command is sent.
+    '''
+    def __init__(self, parent, robot_name, action_name):
+        super().__init__(parent)
+        self.title("Authorization Required")
+        self.geometry("440x240")
+        self.resizable(False, False)
+        self.transient(parent)
+
+        ctk.CTkLabel(self, text=f"{action_name} — {robot_name}", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(20, 8))
+
+        self._icon = ctk.CTkLabel(self, text="⏳", font=ctk.CTkFont(size=40))
+        self._icon.pack(pady=(4, 8))
+
+        self._msg = ctk.CTkLabel(
+            self,
+            text="A browser window was opened.\nPlease click AUTHORIZE to continue.",
+            text_color="gray70",
+            justify="center",
+        )
+        self._msg.pack(pady=(0, 12))
+
+        self._bar = ctk.CTkProgressBar(self, width=320, mode="indeterminate")
+        self._bar.pack(pady=(0, 16), padx=20)
+        self._bar.start()
+
+        self._close_btn = ctk.CTkButton(self, text="Close", command=self.destroy, fg_color="gray40")
+
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
+
+    def show_success(self, message):
+        if not self.winfo_exists():
+            return
+        self._bar.stop()
+        self._bar.pack_forget()
+        self._icon.configure(text="✓", text_color="#2E8B3A")
+        self._msg.configure(text=message, text_color="#2E8B3A")
+        self._close_btn.pack(pady=(0, 16))
+        self.after(4000, self._safe_destroy)
+
+    def show_failure(self, message):
+        if not self.winfo_exists():
+            return
+        self._bar.stop()
+        self._bar.pack_forget()
+        self._icon.configure(text="✕", text_color="#CC3333")
+        self._msg.configure(text=message, text_color="#CC3333")
+        self._close_btn.pack(pady=(0, 16))
+
+    def _safe_destroy(self):
+        if self.winfo_exists():
+            self.destroy()
+
+
+class AddRobotWindow(ctk.CTkToplevel):
+    '''
+    Dialog for adding a robot to the AFSE monitoring list. Validates the name isn't a
+    duplicate, confirms the robot is reachable, then hands the name off to `on_added`
+    (which persists it to the config and refreshes the tab).
+    '''
+    def __init__(self, parent, existing_robots, on_added):
+        super().__init__(parent)
+        self.title("Add Robot")
+        self.geometry("400x240")
+        self.resizable(False, False)
+        self.transient(parent)
+        self._existing = {r.lower() for r in existing_robots}
+        self._on_added = on_added
+
+        ctk.CTkLabel(self, text="Add Robot to Monitor", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(20, 8))
+        ctk.CTkLabel(self, text="Enter the robot's name (e.g. sb20):", text_color="gray70").pack(pady=(0, 6))
+
+        self._entry = ctk.CTkEntry(self, width=240)
+        self._entry.pack(pady=(0, 8))
+        self._entry.bind("<Return>", lambda _e: self._submit())
+
+        self._status = ctk.CTkLabel(self, text="", text_color="gray70")
+        self._status.pack(pady=(0, 8))
+
+        btns = ctk.CTkFrame(self, fg_color="transparent")
+        btns.pack(pady=(0, 12))
+        self._add_btn = ctk.CTkButton(btns, text="Add", width=100, command=self._submit)
+        self._add_btn.pack(side="left", padx=6)
+        ctk.CTkButton(btns, text="Cancel", width=100, fg_color="gray40", command=self.destroy).pack(side="left", padx=6)
+
+        self.wait_visibility()
+        self.grab_set()
+        self._entry.focus()
+
+    def _set_status(self, text, color="gray70"):
+        self._status.configure(text=text, text_color=color)
+
+    def _submit(self):
+        name = self._entry.get().strip()
+        if not name:
+            self._set_status("Please enter a robot name.", "#CC3333")
+            return
+        if name.lower() in self._existing:
+            self._set_status(f"'{name}' is already being monitored.", "#CC3333")
+            return
+        self._add_btn.configure(state="disabled")
+        self._set_status(f"Checking if {name} is reachable...")
+        threading.Thread(target=self._check, args=(name,), daemon=True).start()
+
+    def _check(self, name):
+        reachable = API_fetch.API_Fetch(name, []) is not None
+        self.after(0, lambda: self._finish(name, reachable))
+
+    def _finish(self, name, reachable):
+        if not self.winfo_exists():
+            return
+        if not reachable:
+            self._add_btn.configure(state="normal")
+            self._set_status(f"{name} is not reachable. Check the name and that it's powered on.", "#CC3333")
+            return
+        try:
+            self._on_added(name)
+        except Exception as e:
+            self._add_btn.configure(state="normal")
+            self._set_status(f"Failed to save: {e}", "#CC3333")
+            return
+        self._set_status(f"{name} added!", "#2E8B3A")
+        self.after(1200, self._safe_destroy)
+
+    def _safe_destroy(self):
+        if self.winfo_exists():
+            self.destroy()
+
+
+class RemoveRobotWindow(ctk.CTkToplevel):
+    '''
+    Dialog for removing a robot from the AFSE monitoring list. Presents a dropdown of the
+    currently monitored robots and hands the chosen name to `on_removed` (which strips it
+    from the config and refreshes the tab).
+    '''
+    def __init__(self, parent, monitored_robots, on_removed):
+        super().__init__(parent)
+        self.title("Remove Robot")
+        self.geometry("400x230")
+        self.resizable(False, False)
+        self.transient(parent)
+        self._on_removed = on_removed
+
+        ctk.CTkLabel(self, text="Remove Monitored Robot", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(20, 8))
+
+        if monitored_robots:
+            ctk.CTkLabel(self, text="Select a robot to remove:", text_color="gray70").pack(pady=(0, 6))
+            self._selection = ctk.StringVar(value=monitored_robots[0])
+            self._menu = ctk.CTkOptionMenu(self, values=list(monitored_robots), variable=self._selection, width=240)
+            self._menu.pack(pady=(0, 8))
+        else:
+            self._selection = None
+            ctk.CTkLabel(self, text="No robots are currently being monitored.", text_color="gray70").pack(pady=(0, 8))
+
+        self._status = ctk.CTkLabel(self, text="", text_color="gray70")
+        self._status.pack(pady=(0, 8))
+
+        btns = ctk.CTkFrame(self, fg_color="transparent")
+        btns.pack(pady=(0, 12))
+        self._remove_btn = ctk.CTkButton(
+            btns, text="Remove", width=100, fg_color="#CC3333", hover_color="#A82828",
+            command=self._submit, state=("normal" if monitored_robots else "disabled"),
+        )
+        self._remove_btn.pack(side="left", padx=6)
+        ctk.CTkButton(btns, text="Cancel", width=100, fg_color="gray40", command=self.destroy).pack(side="left", padx=6)
+
+        self.wait_visibility()
+        self.grab_set()
+
+    def _submit(self):
+        if self._selection is None:
+            return
+        name = self._selection.get()
+        try:
+            self._on_removed(name)
+        except Exception as e:
+            self._status.configure(text=f"Failed to remove: {e}", text_color="#CC3333")
+            return
+        self._status.configure(text=f"{name} removed!", text_color="#2E8B3A")
+        self._remove_btn.configure(state="disabled")
+        self.after(1200, self._safe_destroy)
+
+    def _safe_destroy(self):
+        if self.winfo_exists():
+            self.destroy()
+
+
 class RobotDetailWindow(ctk.CTkToplevel):
     def __init__(self, parent, robot_name, charge, color_code, charge_code, zone_id=None, camera_channel=CAMERA_DEFAULT_CHANNEL):
         super().__init__(parent)
         self.title(robot_name)
         self._robot_name = robot_name
         self._zone_id = zone_id
-        self._camera_url = build_camera_url(camera_channel)
+        self._camera_url = build_camera_url(camera_channel, zone_id)
         self.geometry("720x860")
         self.resizable(False, False)
 
@@ -235,8 +434,8 @@ class RobotDetailWindow(ctk.CTkToplevel):
             command=lambda: self._run_robot_action("Stow Robot", Robot_comms.stow_robot),
         ).pack(side="left", padx=4)
         ctk.CTkButton(
-            action_frame, text="Stop Behavior", width=140,
-            command=lambda: self._run_robot_action("Stop Behavior", Robot_comms.stop_behavior),
+            action_frame, text="Reboot Robot", width=140,
+            command=lambda: self._run_robot_action("Reboot Robot", Robot_comms.soft_reboot_api),
         ).pack(side="left", padx=4)
 
         ctk.CTkButton(self, text="Close", command=self._on_close).pack(pady=(4, 12))
@@ -295,16 +494,39 @@ class RobotDetailWindow(ctk.CTkToplevel):
         self.after(50, self._poll_frame)
 
     def _run_robot_action(self, action_name, action_func):
+        # Holds the AuthWaitWindow, which is created lazily and ONLY if browser
+        # authorization turns out to be required for the robot password.
+        auth_win = {"window": None}
+
+        def on_auth_required():
+            def create():
+                if self.winfo_exists():
+                    auth_win["window"] = AuthWaitWindow(self, self._robot_name, action_name)
+            self.after(0, create)
+
+        def finish_success():
+            win = auth_win["window"]
+            if win is not None and win.winfo_exists():
+                win.show_success(f"{action_name} sent to {self._robot_name}.")
+
+        def finish_failure(message):
+            win = auth_win["window"]
+            if win is not None and win.winfo_exists():
+                win.show_failure(message)
+
         def worker():
             try:
-                password = robot_password.get_robot_password(self._robot_name)
+                password = robot_password.get_robot_password(self._robot_name, on_auth_required=on_auth_required)
                 if not password:
                     print(f"{action_name}: could not retrieve robot password")
+                    self.after(0, lambda: finish_failure("Could not retrieve the robot password."))
                     return
                 action_func(self._robot_name, password)
+                self.after(0, finish_success)
             except Exception:
                 import traceback
                 traceback.print_exc()
+                self.after(0, lambda: finish_failure("Authorization timed out or the command failed."))
         threading.Thread(target=worker, daemon=True).start()
 
     def _on_close(self):
@@ -327,6 +549,7 @@ class App(ctk.CTk):
 
         self.config = self.load_config()
         self.authentication = Sheets_editor.authenticator()
+        self.load_zone_data()
 
         self.build_main_area()
         self.build_sidebar()
@@ -337,7 +560,15 @@ class App(ctk.CTk):
         self.after(300, lambda: threading.Thread(target=self.update_from_git, daemon=True).start())
         self.after(500, self._check_config_version)
 
+        self.protocol("WM_DELETE_WINDOW", self._on_app_close)
+
+    def _on_app_close(self):
+        # Cached robot passwords live in memory only; drop them so a reopened GUI re-authorizes.
+        robot_password.clear_password_cache()
+        self.destroy()
+
 #----------------------------------------------------------------------------------------------------------------------------------------
+
 #region Baseline Functions
 
     def build_main_area(self):
@@ -374,8 +605,10 @@ class App(ctk.CTk):
         ).pack(padx=12, pady=4, anchor="n")
 
 #endregion
+
 #----------------------------------------------------------------------------------------------------------------------------------------
-#region Auxiliary Functions
+
+# region Auxiliary Functions
 
     def load_config(self):
         # config_path = Decision_matrix.does_config_exist()
@@ -386,6 +619,35 @@ class App(ctk.CTk):
     def open_settings(self):
         if not hasattr(self, "_settings_win") or not self._settings_win.winfo_exists():
             SettingsWindow(self)
+
+    def load_zone_data(self):
+        '''
+        Scan the STO "global truth" sheet for the current Zone ID -> Dock/Cell mapping and
+        overwrite glossary.ZONE_NAMES / glossary.ZONE_TYPES IN PLACE (so every module that
+        imported those dicts sees the live data). Falls back to the hardcoded glossary values
+        and warns the user if the scan fails.
+        '''
+        try:
+            zone_names, zone_types = Zone_scanner.scan_zone_data(self.authentication)
+            if not zone_names:
+                raise ValueError("No zone data found in the STO sheet.")
+
+            glossary.ZONE_NAMES.clear()
+            glossary.ZONE_NAMES.update(zone_names)
+            glossary.ZONE_TYPES.clear()
+            glossary.ZONE_TYPES.update(zone_types)
+            print(f"Loaded {len(zone_names)} zones from the STO sheet.")
+        except Exception as e:
+            print(f"Zone scan failed, using hardcoded fallback: {e}")
+            self.after(800, lambda err=e: self._notify_zone_fallback(err))
+
+    def _notify_zone_fallback(self, error):
+        messagebox.showwarning(
+            "Zone data unavailable",
+            "Could not load live zone data from the STO sheet, so the GUI is using the "
+            "built-in fallback list. Zone names and camera selection may be out of date.\n\n"
+            f"Details: {error}",
+        )
 
 
     '''
@@ -741,35 +1003,54 @@ class App(ctk.CTk):
 #----------------------------------------------------------------------------------------------------------------------------------------
 #Auxiliary Functions
 
+    @staticmethod
+    def _dig(obj, path, default=None):
+        '''Walk a dotted attribute path safely, returning `default` if any hop is missing.'''
+        for attr in path.split('.'):
+            obj = getattr(obj, attr, None)
+            if obj is None:
+                return default
+        return obj
+
+    @classmethod
+    def _extract_zone_id(cls, data):
+        '''
+        Safely pull the connected zone id out of the robot data. A robot can report
+        zoneState=True while its safetydStatus is missing the zoneId field, so every
+        hop is guarded and we fall back to 'None' rather than raising.
+        '''
+        if not cls._dig(data, 'zoneConnectionStatus.zoneState', False):
+            return 'None'
+        zone_id = cls._dig(data, 'zoneConnectionStatus.safetydStatus.zoneId')
+        return zone_id if zone_id is not None else 'None'
+
     def get_robot_api(self):
         robot_api = []
         robot_list = self.config['AFSE']['Robots']
-        
+
         for robot in robot_list:
-            api = API_fetch.API_Fetch(robot, ROBOT_OFFLINE)
-            if api != None: 
+            # Treat any robot whose API is unreachable OR whose payload is missing
+            # expected fields as offline, so one malformed robot can't blank the whole list.
+            offline_entry = [robot, 0, 5, 5, 'None']
+            try:
+                api = API_fetch.API_Fetch(robot, ROBOT_OFFLINE)
+                if api is None:
+                    raise ValueError("no API response")
+
+                data = Info_Parser.info_parser(api)
+                nickname = self._dig(data, 'description.nickname', robot)
+                soc = self._dig(data, 'status.battery.soc', 0)
+                color = self._dig(data, 'status.lightingState.color', 5)
+                charger_mode = self._dig(data, 'status.battery.chargerMode', 5)
+
                 if robot in ROBOT_OFFLINE:
                     ROBOT_OFFLINE.remove(robot)
-                data = Info_Parser.info_parser(api)
-                robot_api.append([
-                    data.description.nickname,
-                    data.status.battery.soc,
-                    data.status.lightingState.color,
-                    data.status.battery.chargerMode,
-                    data.zoneConnectionStatus.safetydStatus.zoneId if data.zoneConnectionStatus.zoneState else 'None'
-                    ])
-                # print(data.zoneConnectionStatus.safetydStatus.zoneId if data.zoneConnectionStatus.zoneState else 'None')
-            else:
+                robot_api.append([nickname, soc, color, charger_mode, self._extract_zone_id(data)])
+            except Exception:
                 if robot not in ROBOT_OFFLINE:
                     ROBOT_OFFLINE.append(robot)
-                robot_api.append([
-                    robot,
-                    0,
-                    5,
-                    5,
-                    'None'
-                ])
-            
+                robot_api.append(offline_entry)
+
         return robot_api
     
     def afse_schedule_refresh(self):
@@ -781,24 +1062,26 @@ class App(ctk.CTk):
 
     def afse_apply_refresh(self, robot_api):
         if robot_api is not None:
-            self.latest_robot_api = robot_api
-            for i, (name, charge, color_code, charge_code, zone_id) in enumerate(robot_api):
-                # print(f"Robot: {name}, Zone ID: {zone_id}")
-                if i >= len(self.afse_instances):
-                    break
-                status_color, status_label = STATUS_COLORS[color_code]
-                charge_color, charge_status = CHARGE_STATUS[charge_code]
+            # The robot count changes when a robot is added (or first appears), so the
+            # card grid has to be rebuilt; otherwise update the existing cards in place.
+            if len(robot_api) != len(self.afse_instances):
+                self._render_afse_cards(robot_api)
+            else:
+                self.latest_robot_api = robot_api
+                for i, (name, charge, color_code, charge_code, zone_id) in enumerate(robot_api):
+                    status_color, status_label = STATUS_COLORS[color_code]
+                    charge_color, charge_status = CHARGE_STATUS[charge_code]
 
-                win = self._robot_detail_windows.get(name)
-                if win is not None and win.winfo_exists():
-                    win.update_data(charge, color_code, charge_code, zone_id)
+                    win = self._robot_detail_windows.get(name)
+                    if win is not None and win.winfo_exists():
+                        win.update_data(charge, color_code, charge_code, zone_id)
 
-                self.afse_instances[i][0].configure(text=f'{charge:.0f}%')
-                self.afse_instances[i][1].configure(fg_color=status_color)
-                self.afse_instances[i][2].configure(text=status_label)
-                self.afse_instances[i][3].configure(text= charge_status, text_color= charge_color)
-                zone_text = ZONE_NAMES.get(zone_id, 'Not in a Zone')
-                self.afse_instances[i][4].configure(text=zone_text)
+                    self.afse_instances[i][0].configure(text=f'{charge:.0f}%')
+                    self.afse_instances[i][1].configure(fg_color=status_color)
+                    self.afse_instances[i][2].configure(text=status_label)
+                    self.afse_instances[i][3].configure(text= charge_status, text_color= charge_color)
+                    zone_text = ZONE_NAMES.get(zone_id, 'Not in a Zone')
+                    self.afse_instances[i][4].configure(text=zone_text)
         self.after(5000, self.afse_schedule_refresh)
 
     def afse_fetch_data(self):
@@ -818,6 +1101,15 @@ class App(ctk.CTk):
         afse_tab = self.tab_view.tab('AFSE Monitoring')
         self._afse_cards = []
         self._robot_detail_windows = {}
+        self.afse_instances = []
+        self.latest_robot_api = []
+
+        header = ctk.CTkFrame(afse_tab, fg_color="transparent")
+        header.pack(fill="x", padx=12, pady=(0, 6))
+        ctk.CTkButton(header, text="+ Add Robot", width=120, command=self._open_add_robot).pack(side="right")
+        ctk.CTkButton(
+            header, text="− Remove Robot", width=120, fg_color="gray40", command=self._open_remove_robot
+        ).pack(side="right", padx=(0, 8))
 
         self.afse_frame = ctk.CTkScrollableFrame(afse_tab, fg_color="gray20")
         self.afse_frame.pack(fill="both", expand=True, padx=12, pady=(0, 12))
@@ -825,45 +1117,90 @@ class App(ctk.CTk):
         for col in range(ROBOT_CARD_COLS):
             self.afse_frame.grid_columnconfigure(col, weight=1)
 
-        robot_api = self.afse_fetch_data()
+        self._render_afse_cards(self.afse_fetch_data())
+        self.afse_schedule_refresh()
+
+    def _render_afse_cards(self, robot_api):
+        '''(Re)build the AFSE card grid from scratch. Used on first build and whenever the
+        monitored robot count changes (e.g. a robot was added).'''
+        for widget in self._afse_cards:
+            widget.destroy()
+        self._afse_cards = []
+        self.afse_instances = []
         self.latest_robot_api = robot_api or []
 
-        self.afse_instances = []
         if robot_api is None:
             label = ctk.CTkLabel(self.afse_frame, text="Failed to fetch robot data.", text_color="red")
             label.grid(row=0, column=0, columnspan=ROBOT_CARD_COLS, pady=20)
             self._afse_cards.append(label)
-        else:
-            for i, (name, charge, color_code, charge_code, zone_id) in enumerate(robot_api):
-                status_color, status_label = STATUS_COLORS[color_code]
-                charge_color, charge_status = CHARGE_STATUS[charge_code]
+            return
 
-                card = ctk.CTkFrame(self.afse_frame, fg_color="gray30", corner_radius=8)
-                card.grid(row=i // ROBOT_CARD_COLS, column=i % ROBOT_CARD_COLS, padx=8, pady=8, sticky="nsew")
-                self._afse_cards.append(card)
+        for i, (name, charge, color_code, charge_code, zone_id) in enumerate(robot_api):
+            status_color, status_label = STATUS_COLORS[color_code]
+            charge_color, charge_status = CHARGE_STATUS[charge_code]
 
-                ctk.CTkLabel(card, text=name, font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(12, 4), padx=12)
+            card = ctk.CTkFrame(self.afse_frame, fg_color="gray30", corner_radius=8)
+            card.grid(row=i // ROBOT_CARD_COLS, column=i % ROBOT_CARD_COLS, padx=8, pady=8, sticky="nsew")
+            self._afse_cards.append(card)
 
-                robot_charge = ctk.CTkLabel(card, text=f"{charge:.0f}%", font=ctk.CTkFont(size=24, weight="bold"))
-                robot_charge.pack(pady=(4, 0))
-                ctk.CTkLabel(card, text="Charge", text_color="gray70", font=ctk.CTkFont(size=11)).pack(pady=(0, 8))
-                robot_charge_status = ctk.CTkLabel(card, text=charge_status, text_color= charge_color, font=ctk.CTkFont(size=11))
-                robot_charge_status.pack(pady=(0, 8))
+            ctk.CTkLabel(card, text=name, font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(12, 4), padx=12)
 
-                status_badge = ctk.CTkFrame(card, fg_color=status_color, corner_radius=6)
-                status_badge.pack(pady=(0, 6), padx=12, fill="x")
-                robot_status = ctk.CTkLabel(status_badge, text=status_label, text_color="white", font=ctk.CTkFont(size=12, weight="bold"))
-                robot_status.pack(pady=6)
+            robot_charge = ctk.CTkLabel(card, text=f"{charge:.0f}%", font=ctk.CTkFont(size=24, weight="bold"))
+            robot_charge.pack(pady=(4, 0))
+            ctk.CTkLabel(card, text="Charge", text_color="gray70", font=ctk.CTkFont(size=11)).pack(pady=(0, 8))
+            robot_charge_status = ctk.CTkLabel(card, text=charge_status, text_color= charge_color, font=ctk.CTkFont(size=11))
+            robot_charge_status.pack(pady=(0, 8))
 
-                zone_text = ZONE_NAMES.get(zone_id, 'Not in a Zone')
-                robot_zone = ctk.CTkLabel(card, text=zone_text, text_color="gray80", font=ctk.CTkFont(size=12))
-                robot_zone.pack(pady=(0, 10))
+            status_badge = ctk.CTkFrame(card, fg_color=status_color, corner_radius=6)
+            status_badge.pack(pady=(0, 6), padx=12, fill="x")
+            robot_status = ctk.CTkLabel(status_badge, text=status_label, text_color="white", font=ctk.CTkFont(size=12, weight="bold"))
+            robot_status.pack(pady=6)
 
-                self.afse_instances.append([robot_charge, status_badge, robot_status, robot_charge_status, robot_zone])
-                self._bind_card_click(card, i)
+            zone_text = ZONE_NAMES.get(zone_id, 'Not in a Zone')
+            robot_zone = ctk.CTkLabel(card, text=zone_text, text_color="gray80", font=ctk.CTkFont(size=12))
+            robot_zone.pack(pady=(0, 10))
 
+            self.afse_instances.append([robot_charge, status_badge, robot_status, robot_charge_status, robot_zone])
+            self._bind_card_click(card, i)
 
-        self.afse_schedule_refresh()
+    def _open_add_robot(self):
+        if getattr(self, "_add_robot_win", None) is not None and self._add_robot_win.winfo_exists():
+            self._add_robot_win.focus()
+            return
+        self._add_robot_win = AddRobotWindow(self, self.config['AFSE']['Robots'], self._add_robot_to_config)
+
+    def _add_robot_to_config(self, name):
+        '''Persist a new robot to the config's AFSE list and refresh the tab. Runs on the
+        main thread (invoked from AddRobotWindow after a successful reachability check).'''
+        self.config['AFSE']['Robots'].append(name)
+        with open(CONFIG_PATH, 'w') as f:
+            json.dump(self.config, f, indent=4)
+        self._reload_afse()
+
+    def _open_remove_robot(self):
+        if getattr(self, "_remove_robot_win", None) is not None and self._remove_robot_win.winfo_exists():
+            self._remove_robot_win.focus()
+            return
+        self._remove_robot_win = RemoveRobotWindow(self, self.config['AFSE']['Robots'], self._remove_robot_from_config)
+
+    def _remove_robot_from_config(self, name):
+        '''Strip a robot from the config's AFSE list, persist, and refresh the tab.'''
+        robots = self.config['AFSE']['Robots']
+        if name in robots:
+            robots.remove(name)
+        if name in ROBOT_OFFLINE:
+            ROBOT_OFFLINE.remove(name)
+        with open(CONFIG_PATH, 'w') as f:
+            json.dump(self.config, f, indent=4)
+        self._reload_afse()
+
+    def _reload_afse(self):
+        '''One-shot fetch + re-render so a newly added robot shows immediately, without
+        starting a second refresh loop (the existing 5s loop keeps running).'''
+        def work():
+            robot_api = self.afse_fetch_data()
+            self.after(0, lambda: self._render_afse_cards(robot_api))
+        threading.Thread(target=work, daemon=True).start()
 
     def _bind_card_click(self, widget, index):
         handler = lambda _e: self._open_robot_window(index)

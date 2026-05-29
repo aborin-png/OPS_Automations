@@ -31,9 +31,36 @@ AUTH_POLL_INTERVAL = 2.0     # seconds between cookie re-checks
 AUTH_TIMEOUT = 180.0         # max seconds to wait for the user to authorize
 CHROME_CONFIG = pathlib.Path.home() / ".config" / "google-chrome"
 
+# In-memory password cache so a robot only has to be authorized once per session.
+# Entries live in process memory only (never written to disk, so nothing is hardcoded /
+# persisted) and expire after PASSWORD_TTL; the whole cache is gone when the app exits.
+PASSWORD_TTL = 15 * 60       # seconds a cached password stays valid
+_password_cache: dict[tuple[str, str], tuple[str, float]] = {}
+
 
 class AuthenticationRequired(RuntimeError):
     pass
+
+
+def _cache_get(robot: str, field: str) -> str | None:
+    """Return a cached, non-expired password for (robot, field), or None."""
+    entry = _password_cache.get((robot, field))
+    if entry is None:
+        return None
+    password, expiry = entry
+    if time.monotonic() >= expiry:
+        _password_cache.pop((robot, field), None)
+        return None
+    return password
+
+
+def _cache_set(robot: str, field: str, password: str) -> None:
+    _password_cache[(robot, field)] = (password, time.monotonic() + PASSWORD_TTL)
+
+
+def clear_password_cache() -> None:
+    """Drop every cached password (e.g. on GUI shutdown)."""
+    _password_cache.clear()
 
 
 def _chrome_cookie_files() -> list[pathlib.Path]:
@@ -87,11 +114,13 @@ def _parse_field(html_text: str, field: str) -> str | None:
     return None if value == "None" else value
 
 
-def _prompt_authorize(serial: str) -> str:
+def _prompt_authorize(serial: str, on_auth_required=None) -> str:
     url = f"{LOOKUP_URL}?serial={serial}"
     profiles = [p.parent.name for p in _chrome_cookie_files()]
     print(f"Authorization required. Opening {url} — click AUTHORIZE in your browser.")
     print(f"Searching Chrome profiles: {profiles or '(none found!)'}")
+    if on_auth_required is not None:
+        on_auth_required()
     webbrowser.open(url)
 
     deadline = time.monotonic() + AUTH_TIMEOUT
@@ -107,7 +136,7 @@ def _prompt_authorize(serial: str) -> str:
     )
 
 
-def get_robot_password(robot: str, field: str = "web.bd") -> str | None:
+def get_robot_password(robot: str, field: str = "web.bd", on_auth_required=None) -> str | None:
     """
     Returns the value of `field` for `serial` from the Robot Password
     Lookup page, or None if the row's value is 'None' or the field
@@ -115,14 +144,27 @@ def get_robot_password(robot: str, field: str = "web.bd") -> str | None:
 
     On first run (or when the Knox session expires), opens the lookup
     URL in the user's browser, waits for AUTHORIZE, then resumes.
+
+    `on_auth_required`, if given, is called (with no arguments) only when
+    browser authorization is actually needed, just before the browser opens.
+    Callers can use it to surface a "waiting for authorization" UI.
+
+    A successfully retrieved password is cached in memory for PASSWORD_TTL so the
+    same robot does not need to be authorized again until it expires or the app exits.
     """
+    cached = _cache_get(robot, field)
+    if cached is not None:
+        return cached
+
     serial = f'ssd-{info_parser(API_Fetch(robot=robot, robot_offline=[])).description.serial}'
 
     text = _fetch_lookup_html(serial)
     if text is None:
-        text = _prompt_authorize(serial)
+        text = _prompt_authorize(serial, on_auth_required=on_auth_required)
     password = _parse_field(text, field)
     # print(f"Password for {field}: {password}")
+    if password is not None:
+        _cache_set(robot, field, password)
     return password
 
 

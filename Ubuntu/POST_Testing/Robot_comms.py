@@ -40,14 +40,13 @@ def soft_reboot_api(robot: str, password: str) -> None:
         raise
 
 def restart_AFSE(robot: str, password: str) -> None:
-    """Performs a restart of the AFSE service via POST /api/afse/restart.
+    """Performs a restart of the AFSE service via POST /api/behaviors/start.
 
     No parameters required.
 
     Args:
-        auth_token (str): Bearer token from login_swi_api.
-        robot_address (str): The address or hostname of the robot.
-        logger: Logger object for logging messages.
+        robot (str): The address or hostname of the robot.
+        password (str): The password for the robot.
 
     Raises:
         requests.HTTPError: If the request fails (400 Bad Request, 401 Unauthorized, etc).
@@ -76,6 +75,9 @@ def stow_robot(robot: str, password: str) -> None:
     Args:
         robot (str): The address or hostname of the robot.
         password (str): The password for the robot.
+    
+    Raises:
+        requests.HTTPError: If the request fails (400 Bad Request, 401 Unauthorized, etc).
     """
     url = f"https://{robot}.stretch/api/behaviors/start"
     auth_token = get_auth_token(robot, password)
@@ -114,6 +116,12 @@ def stop_behavior(robot: str, password: str) -> None:
     except requests.RequestException as e:
         print(f"Behavior stop request error: {e}")
         raise
+
+
+
+#-------------------------------------------------------------------------------------------------------------------
+
+#region Auxiliary Functions
 
 def get_auth_token(robot, password):
     url = f"https://{robot}.stretch/authd/login"
@@ -164,6 +172,7 @@ def get_previously_active_behavior(robot, password):
         print(f"Get active behavior request failed: {e}")
         raise
 
+#endregion
 # if __name__ == "__main__":
 #     robot = sys.argv[1] if len(sys.argv) > 1 else "None"
 #     password = robot_password.get_robot_password(robot)

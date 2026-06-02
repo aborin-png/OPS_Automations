@@ -1,11 +1,14 @@
 import requests
 import sys
 import json
+import logging
 
 try:
     from POST_Testing import robot_password
 except ImportError:
     import robot_password
+
+logger = logging.getLogger("OPS.robot_comms")
 
 
 # Post command for soft reboot using python
@@ -26,17 +29,17 @@ def soft_reboot_api(robot: str, password: str) -> None:
 
     auth_token = get_auth_token(robot, password)
     headers = {"Authorization": f"Bearer {auth_token}", "Content-Type": "application/json"}
-    print(f"Sending soft reboot request to {url}")
+    logger.info("Sending soft reboot request to %s", url)
     try:
         response = requests.post(url, headers=headers, verify=False, timeout=10)
-        print(f"Soft reboot response: {response.status_code} {response.text}")
+        logger.debug("Soft reboot response: %s %s", response.status_code, response.text)
         response.raise_for_status()
-        print("Soft reboot request accepted (200 OK)")
+        logger.info("Soft reboot request accepted (200 OK)")
     except requests.HTTPError as e:
-        print(f"Soft reboot failed: {e.response.status_code} {e.response.text}")
+        logger.error("Soft reboot failed: %s %s", e.response.status_code, e.response.text)
         raise
     except requests.RequestException as e:
-        print(f"Soft reboot request error: {e}")
+        logger.error("Soft reboot request error: %s", e)
         raise
 
 def restart_AFSE(robot: str, password: str) -> None:
@@ -56,17 +59,17 @@ def restart_AFSE(robot: str, password: str) -> None:
     auth_token = get_auth_token(robot, password)
     headers = {"Authorization": f"Bearer {auth_token}", "Content-Type": "application/json"}
     body = {"behaviorId": "60005", "uploadTestResults": True}
-    print(f"Sending AFSE restart request to {url}")
+    logger.info("Sending AFSE restart request to %s", url)
     try:
         response = requests.post(url, headers=headers, json=body, verify=False, timeout=10)
-        print(f"AFSE restart response: {response.status_code} {json.dumps(response.json(), indent=4)}")
+        logger.debug("AFSE restart response: %s %s", response.status_code, json.dumps(response.json(), indent=4))
         response.raise_for_status()
-        print("AFSE restart request accepted (200 OK)")
+        logger.info("AFSE restart request accepted (200 OK)")
     except requests.HTTPError as e:
-        print(f"AFSE restart failed: {e.response.status_code} {e.response.text}")
+        logger.error("AFSE restart failed: %s %s", e.response.status_code, e.response.text)
         raise
     except requests.RequestException as e:
-        print(f"AFSE restart request error: {e}")
+        logger.error("AFSE restart request error: %s", e)
         raise
 
 def stow_robot(robot: str, password: str) -> None:
@@ -86,14 +89,13 @@ def stow_robot(robot: str, password: str) -> None:
     try:
         response = requests.post(url, headers=headers, json=body, verify=False, timeout=10)
         response.raise_for_status()
-        print(f"Stow behavior start response: {response.status_code} {json.dumps(response.json(), indent=4)}")
-
-        print("Stow behavior start request accepted (200 OK)")
+        logger.debug("Stow behavior start response: %s %s", response.status_code, json.dumps(response.json(), indent=4))
+        logger.info("Stow behavior start request accepted (200 OK)")
     except requests.HTTPError as e:
-        print(f"Stow behavior start failed: {e.response.status_code} {e.response.text}")
+        logger.error("Stow behavior start failed: %s %s", e.response.status_code, e.response.text)
         raise
     except requests.RequestException as e:
-        print(f"Stow behavior start request error: {e}")
+        logger.error("Stow behavior start request error: %s", e)
         raise
 
 def stop_behavior(robot: str, password: str) -> None:
@@ -109,12 +111,12 @@ def stop_behavior(robot: str, password: str) -> None:
     try:
         response = requests.post(url, headers=headers, verify=False, timeout=10)
         response.raise_for_status()
-        print("Behavior stop request accepted (200 OK)")
+        logger.info("Behavior stop request accepted (200 OK)")
     except requests.HTTPError as e:
-        print(f"Behavior stop failed: {e.response.status_code} {e.response.text}")
+        logger.error("Behavior stop failed: %s %s", e.response.status_code, e.response.text)
         raise
     except requests.RequestException as e:
-        print(f"Behavior stop request error: {e}")
+        logger.error("Behavior stop request error: %s", e)
         raise
 
 
@@ -131,13 +133,12 @@ def get_auth_token(robot, password):
         token = response.json().get("auth_token")
         if not token:
             raise ValueError("No auth_token found in login response")
-        # print(token)
         return token
     except requests.RequestException as e:
-        print(f"Login request failed: {e}")
+        logger.error("Login request failed: %s", e)
         raise
     except ValueError as e:
-        print(f"Login response error: {e}")
+        logger.error("Login response error: %s", e)
         raise
 
 def get_behavior_list(robot, password):
@@ -148,14 +149,14 @@ def get_behavior_list(robot, password):
         response = requests.get(url, headers=headers, verify=False, timeout=10)
         response.raise_for_status()
         behaviors = response.json().get("behaviors", [])
-        print(f"Available behaviors: {behaviors}")
-        
+        logger.info("Available behaviors: %s", behaviors)
+
         with open(f"{robot}_behaviors.txt", "w") as f:
             for behavior in behaviors:
                 f.write(f"{behavior}\n")
-        print(f"Behavior list saved to {robot}_behaviors.txt")
+        logger.info("Behavior list saved to %s_behaviors.txt", robot)
     except requests.RequestException as e:
-        print(f"Get behavior list request failed: {e}")
+        logger.error("Get behavior list request failed: %s", e)
         raise
 
 def get_previously_active_behavior(robot, password):
@@ -166,10 +167,10 @@ def get_previously_active_behavior(robot, password):
         response = requests.get(url, headers=headers, verify=False, timeout=10)
         response.raise_for_status()
         active_behavior = response.json()
-        print(f"Previously active behavior: {json.dumps(active_behavior, indent=4)}")
+        logger.info("Previously active behavior: %s", json.dumps(active_behavior, indent=4))
         return active_behavior
     except requests.RequestException as e:
-        print(f"Get active behavior request failed: {e}")
+        logger.error("Get active behavior request failed: %s", e)
         raise
 
 #endregion

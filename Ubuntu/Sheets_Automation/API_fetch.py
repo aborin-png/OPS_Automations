@@ -8,8 +8,12 @@ Scraping data from many aspects of SWI can be added fairly easily
 #-----------------------------------------------------------------------------------------------------------------------------
 #region Includes
 
+import logging
+
 import requests
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger("OPS.api_fetch")
 
 #endregion
 #-----------------------------------------------------------------------------------------------------------------------------
@@ -39,8 +43,7 @@ def API_Fetch(robot, robot_offline):
         if robot in robot_offline:
             return None
         else:
-            print(f"Encountered an error when accessing the url: {e}")
-            print('Please make sure the robot is on and not booting up.')
+            logger.warning("Error accessing %s: %s (is the robot on and not booting?)", url, e)
             return None
 
 

@@ -10,11 +10,14 @@ cookie and resumes automatically.
 """
 import http.cookiejar
 import html
+import logging
 import pathlib
 import re
 import sys
 import time
 import webbrowser
+
+logger = logging.getLogger("OPS.robot_password")
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
@@ -34,7 +37,7 @@ CHROME_CONFIG = pathlib.Path.home() / ".config" / "google-chrome"
 # In-memory password cache so a robot only has to be authorized once per session.
 # Entries live in process memory only (never written to disk, so nothing is hardcoded /
 # persisted) and expire after PASSWORD_TTL; the whole cache is gone when the app exits.
-PASSWORD_TTL = 15 * 60       # seconds a cached password stays valid
+PASSWORD_TTL = 60 * 60       # seconds a cached password stays valid
 _password_cache: dict[tuple[str, str], tuple[str, float]] = {}
 
 
@@ -117,8 +120,8 @@ def _parse_field(html_text: str, field: str) -> str | None:
 def _prompt_authorize(serial: str, on_auth_required=None) -> str:
     url = f"{LOOKUP_URL}?serial={serial}"
     profiles = [p.parent.name for p in _chrome_cookie_files()]
-    print(f"Authorization required. Opening {url} — click AUTHORIZE in your browser.")
-    print(f"Searching Chrome profiles: {profiles or '(none found!)'}")
+    logger.info("Authorization required. Opening %s — click AUTHORIZE in your browser.", url)
+    logger.debug("Searching Chrome profiles: %s", profiles or "(none found!)")
     if on_auth_required is not None:
         on_auth_required()
     webbrowser.open(url)
@@ -128,7 +131,7 @@ def _prompt_authorize(serial: str, on_auth_required=None) -> str:
         time.sleep(AUTH_POLL_INTERVAL)
         text = _fetch_lookup_html(serial)
         if text is not None:
-            print("Authorized. Continuing.")
+            logger.info("Authorized. Continuing.")
             return text
 
     raise AuthenticationRequired(

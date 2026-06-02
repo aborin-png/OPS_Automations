@@ -14,6 +14,8 @@ from PIL import Image, ImageTk
 
 from Sheets_Automation import Sheets_editor, Decision_matrix, API_fetch, Info_Parser, Zone_scanner
 import glossary
+import logger_setup
+from logger_setup import log_calls
 
 # sys.path.insert(0, str(Path.Path(__file__).resolve().parent / "POST_Testing"))
 from POST_Testing import Robot_comms
@@ -71,6 +73,9 @@ def find_config() -> Path.Path:
 
 CONFIG_PATH = find_config()
 
+# Set up logging as early as possible (logs live in a folder next to Config.json).
+logger = logger_setup.setup_logging(CONFIG_PATH.parent / "logs")
+
 TAB_COLORS = {
     "Sheet Editor": "#5B9BD5",
     # "Test Rails":   "#70AD47",
@@ -101,21 +106,58 @@ ROBOT_CARD_COLS = 4
 
 ROBOT_OFFLINE = []
 
+# (light_mode, dark_mode) color pairs so the UI stays readable in BOTH appearance modes.
+# A single fixed color (e.g. "gray20") does not adapt, so in light mode a dark panel keeps a
+# dark background while CTk flips its text to black -> unreadable. These tuples fix that.
+PANEL_COLOR = ("gray85", "gray20")    # large background panels / scrollable areas
+CARD_COLOR = ("gray75", "gray30")     # robot cards / inner panels
+DIVIDER_COLOR = ("gray70", "gray40")  # thin separator lines
+SUBTLE_TEXT = ("gray35", "gray70")    # secondary / hint / label text
+
 #region GUI Window Classes
 
 class SettingsWindow(ctk.CTkToplevel):
+    SCALING_OPTIONS = ["80%", "90%", "100%", "110%", "125%", "150%", "175%", "200%"]
+
     def __init__(self, parent):
         super().__init__(parent)
+        self._app = parent
         self.title("Settings")
         self.geometry("400x300")
         self.resizable(False, False)
 
-        ctk.CTkLabel(self, text="Settings", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 10))
-        ctk.CTkLabel(self, text="No settings configured yet.", text_color="gray").pack(pady=10)
-        ctk.CTkButton(self, text="Close", command=self.destroy).pack(pady=20)
+        ctk.CTkLabel(self, text="Settings", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 12))
+
+        ctk.CTkLabel(self, text="UI Scaling", text_color=SUBTLE_TEXT).pack(pady=(4, 2))
+        current = f"{int(round(self._app.ui_scaling * 100))}%"
+        self._scaling_var = ctk.StringVar(value=current)
+        ctk.CTkOptionMenu(
+            self, values=self.SCALING_OPTIONS, variable=self._scaling_var,
+            command=self._on_scaling_change, width=160,
+        ).pack(pady=(0, 4))
+        ctk.CTkLabel(
+            self, text="Adjusts text and widget size for this machine.\nApplies immediately and is saved.",
+            text_color=SUBTLE_TEXT, font=ctk.CTkFont(size=11), justify="center",
+        ).pack(pady=(0, 10))
+
+        ctk.CTkLabel(self, text="Appearance Mode", text_color=SUBTLE_TEXT).pack(pady=(4, 2))
+        self._appearance_var = ctk.StringVar(value=ctk.get_appearance_mode())
+        ctk.CTkOptionMenu(
+            self, values=["Light", "Dark"], variable=self._appearance_var,
+            command=self._appearance_mode_changed, width=160,
+        ).pack(pady=(0, 4))
+
+        ctk.CTkButton(self, text="Close", command=self.destroy).pack(pady=(8, 20))
 
         self.wait_visibility()
         self.grab_set()
+
+    def _on_scaling_change(self, choice):
+        factor = int(choice.rstrip('%')) / 100.0
+        self._app.set_ui_scaling(factor)
+
+    def _appearance_mode_changed(self, choice):
+        ctk.set_appearance_mode(choice)
 
 class UpdateWindow(ctk.CTkToplevel):
     def __init__(self, parent, on_update):
@@ -125,7 +167,7 @@ class UpdateWindow(ctk.CTkToplevel):
         self.resizable(False, False)
 
         ctk.CTkLabel(self, text="Update Available", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 10))
-        self.msg_label = ctk.CTkLabel(self, text="Would you like to update to the latest version?", text_color="gray")
+        self.msg_label = ctk.CTkLabel(self, text="Would you like to update to the latest version?", text_color=SUBTLE_TEXT)
         self.msg_label.pack(pady=10)
 
         btn_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -151,7 +193,7 @@ class ProgressWindow(ctk.CTkToplevel):
         self._progress_bar.set(0)
         self._progress_bar.pack(pady=(0, 8), padx=20)
 
-        self._status_label = ctk.CTkLabel(self, text="Starting...", text_color="gray70")
+        self._status_label = ctk.CTkLabel(self, text="Starting...", text_color=SUBTLE_TEXT)
         self._status_label.pack(pady=(0, 16))
 
         self.wait_visibility()
@@ -174,7 +216,7 @@ class ConfigUpdateWindow(ctk.CTkToplevel):
         ctk.CTkLabel(
             self,
             text=f"Your version: {ver_current}     Required version: {required_version}",
-            text_color="gray70"
+            text_color=SUBTLE_TEXT
         ).pack(pady=(0, 12))
 
         warning_frame = ctk.CTkFrame(self, fg_color="#3d2000", corner_radius=6)
@@ -200,6 +242,50 @@ class ConfigUpdateWindow(ctk.CTkToplevel):
         self.grab_set()
 
 
+class ErrorWindow(ctk.CTkToplevel):
+    '''
+    Shown when an unexpected error / crash occurs. Tells the user something went wrong,
+    offers a button to open the folder where logs are stored, and reminds them to attach
+    those logs to any bug report.
+    '''
+    def __init__(self, parent, detail=None):
+        super().__init__(parent)
+        self.title("Application Error")
+        self.geometry("540x320")
+        self.resizable(False, False)
+        self.transient(parent)
+
+        ctk.CTkLabel(
+            self, text="⚠  An error has occurred",
+            font=ctk.CTkFont(size=18, weight="bold"), text_color="#ffcc44",
+        ).pack(pady=(20, 6))
+        ctk.CTkLabel(
+            self,
+            text="The application ran into a problem and may not behave correctly.\nThe details have been recorded in the log files.",
+            text_color=SUBTLE_TEXT, justify="center",
+        ).pack(pady=(0, 8))
+
+        if detail:
+            box = ctk.CTkFrame(self, fg_color="#3d2000", corner_radius=6)
+            box.pack(fill="x", padx=20, pady=(0, 8))
+            ctk.CTkLabel(box, text=str(detail), text_color="#ffcc44", wraplength=470, justify="left").pack(pady=8, padx=12)
+
+        ctk.CTkLabel(
+            self,
+            text="If you are submitting a bug report, please include the relevant\nlog files from the folder below with your report.",
+            text_color=SUBTLE_TEXT, justify="center",
+        ).pack(pady=(4, 12))
+
+        btns = ctk.CTkFrame(self, fg_color="transparent")
+        btns.pack(pady=(0, 16))
+        ctk.CTkButton(btns, text="Open Logs Folder", width=160, command=logger_setup.open_log_folder).pack(side="left", padx=6)
+        ctk.CTkButton(btns, text="Close", width=120, fg_color="gray40", command=self.destroy).pack(side="left", padx=6)
+
+        self.wait_visibility()
+        self.lift()
+        self.focus()
+
+
 class AuthWaitWindow(ctk.CTkToplevel):
     '''
     Small status window shown only when robot-password retrieval needs the user to
@@ -221,7 +307,7 @@ class AuthWaitWindow(ctk.CTkToplevel):
         self._msg = ctk.CTkLabel(
             self,
             text="A browser window was opened.\nPlease click AUTHORIZE to continue.",
-            text_color="gray70",
+            text_color=SUBTLE_TEXT,
             justify="center",
         )
         self._msg.pack(pady=(0, 12))
@@ -274,13 +360,13 @@ class AddRobotWindow(ctk.CTkToplevel):
         self._on_added = on_added
 
         ctk.CTkLabel(self, text="Add Robot to Monitor", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(20, 8))
-        ctk.CTkLabel(self, text="Enter the robot's name (e.g. sb20):", text_color="gray70").pack(pady=(0, 6))
+        ctk.CTkLabel(self, text="Enter the robot's name (e.g. sb20):", text_color=SUBTLE_TEXT).pack(pady=(0, 6))
 
         self._entry = ctk.CTkEntry(self, width=240)
         self._entry.pack(pady=(0, 8))
         self._entry.bind("<Return>", lambda _e: self._submit())
 
-        self._status = ctk.CTkLabel(self, text="", text_color="gray70")
+        self._status = ctk.CTkLabel(self, text="", text_color=SUBTLE_TEXT)
         self._status.pack(pady=(0, 8))
 
         btns = ctk.CTkFrame(self, fg_color="transparent")
@@ -350,15 +436,15 @@ class RemoveRobotWindow(ctk.CTkToplevel):
         ctk.CTkLabel(self, text="Remove Monitored Robot", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(20, 8))
 
         if monitored_robots:
-            ctk.CTkLabel(self, text="Select a robot to remove:", text_color="gray70").pack(pady=(0, 6))
+            ctk.CTkLabel(self, text="Select a robot to remove:", text_color=SUBTLE_TEXT).pack(pady=(0, 6))
             self._selection = ctk.StringVar(value=monitored_robots[0])
             self._menu = ctk.CTkOptionMenu(self, values=list(monitored_robots), variable=self._selection, width=240)
             self._menu.pack(pady=(0, 8))
         else:
             self._selection = None
-            ctk.CTkLabel(self, text="No robots are currently being monitored.", text_color="gray70").pack(pady=(0, 8))
+            ctk.CTkLabel(self, text="No robots are currently being monitored.", text_color=SUBTLE_TEXT).pack(pady=(0, 8))
 
-        self._status = ctk.CTkLabel(self, text="", text_color="gray70")
+        self._status = ctk.CTkLabel(self, text="", text_color=SUBTLE_TEXT)
         self._status.pack(pady=(0, 8))
 
         btns = ctk.CTkFrame(self, fg_color="transparent")
@@ -411,7 +497,7 @@ class RobotDetailWindow(ctk.CTkToplevel):
 
         self.charge_label = ctk.CTkLabel(self, text="", font=ctk.CTkFont(size=32, weight="bold"))
         self.charge_label.pack()
-        ctk.CTkLabel(self, text="Charge", text_color="gray70").pack(pady=(0, 4))
+        ctk.CTkLabel(self, text="Charge", text_color=SUBTLE_TEXT).pack(pady=(0, 4))
         self.charge_status_label = ctk.CTkLabel(self, text="")
         self.charge_status_label.pack(pady=(0, 8))
 
@@ -420,7 +506,7 @@ class RobotDetailWindow(ctk.CTkToplevel):
         self.status_label = ctk.CTkLabel(self.status_badge, text="", text_color="white", font=ctk.CTkFont(size=14, weight="bold"))
         self.status_label.pack(pady=6)
 
-        self.zone_label = ctk.CTkLabel(self, text="", text_color="gray80", font=ctk.CTkFont(size=20, weight="bold"))
+        self.zone_label = ctk.CTkLabel(self, text="", text_color=SUBTLE_TEXT, font=ctk.CTkFont(size=20, weight="bold"))
         self.zone_label.pack(pady=(8, 12))
 
         action_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -493,6 +579,7 @@ class RobotDetailWindow(ctk.CTkToplevel):
             self.video_label.configure(image=photo, text="")
         self.after(50, self._poll_frame)
 
+    @log_calls
     def _run_robot_action(self, action_name, action_func):
         # Holds the AuthWaitWindow, which is created lazily and ONLY if browser
         # authorization turns out to be required for the robot password.
@@ -518,14 +605,13 @@ class RobotDetailWindow(ctk.CTkToplevel):
             try:
                 password = robot_password.get_robot_password(self._robot_name, on_auth_required=on_auth_required)
                 if not password:
-                    print(f"{action_name}: could not retrieve robot password")
+                    logger.warning("%s: could not retrieve password for %s", action_name, self._robot_name)
                     self.after(0, lambda: finish_failure("Could not retrieve the robot password."))
                     return
                 action_func(self._robot_name, password)
                 self.after(0, finish_success)
             except Exception:
-                import traceback
-                traceback.print_exc()
+                logger.exception("Robot action '%s' failed for %s", action_name, self._robot_name)
                 self.after(0, lambda: finish_failure("Authorization timed out or the command failed."))
         threading.Thread(target=worker, daemon=True).start()
 
@@ -539,6 +625,12 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__()
 
+        # Route exceptions raised inside Tk callbacks (button clicks, after() jobs, etc.)
+        # into the log instead of just dumping them to the terminal.
+        self.report_callback_exception = self._log_callback_exception
+        # Surface a crash/error window when an uncaught exception is logged anywhere.
+        logger_setup.register_error_handler(self._on_logged_error)
+
         self.title("OPS Automations")
         self.geometry("900x600")
         self.minsize(700, 450)
@@ -547,7 +639,13 @@ class App(ctk.CTk):
         self.grid_columnconfigure(1, weight=0)
         self.grid_rowconfigure(0, weight=1)
 
+        logger.info("Starting OPS Automations GUI")
         self.config = self.load_config()
+
+        # Apply the per-machine UI scaling before any widgets are built. CTk auto-detects DPI,
+        # which is unreliable on Linux/HiDPI, so this lets each machine be tuned in Settings.
+        self.ui_scaling = float(self.config.get("UI", {}).get("Scaling", 1.0))
+        self._apply_ui_scaling(self.ui_scaling)
         self.authentication = Sheets_editor.authenticator()
         self.load_zone_data()
 
@@ -562,8 +660,31 @@ class App(ctk.CTk):
 
         self.protocol("WM_DELETE_WINDOW", self._on_app_close)
 
+    def _log_callback_exception(self, exc_type, exc_value, exc_tb):
+        logger.error("Uncaught exception in Tk callback", exc_info=(exc_type, exc_value, exc_tb))
+        self._show_error_window(f"{exc_type.__name__}: {exc_value}")
+
+    def _on_logged_error(self, message):
+        '''Called (possibly from a worker thread) when an uncaught exception is logged.'''
+        try:
+            self.after(0, lambda: self._show_error_window(message))
+        except Exception:
+            pass
+
+    def _show_error_window(self, message=None):
+        if not self.winfo_exists():
+            return
+        existing = getattr(self, "_error_win", None)
+        if existing is not None and existing.winfo_exists():
+            existing.lift()
+            existing.focus()
+            return
+        self._error_win = ErrorWindow(self, detail=message)
+
+    @log_calls
     def _on_app_close(self):
         # Cached robot passwords live in memory only; drop them so a reopened GUI re-authorizes.
+        logger.info("Shutting down OPS Automations GUI")
         robot_password.clear_password_cache()
         self.destroy()
 
@@ -595,7 +716,7 @@ class App(ctk.CTk):
             self.sidebar, text="Menu", font=ctk.CTkFont(size=14, weight="bold")
         ).pack(pady=(16, 8), padx=12)
 
-        ctk.CTkFrame(self.sidebar, height=1, fg_color="gray40").pack(fill="x", padx=12, pady=(0, 12))
+        ctk.CTkFrame(self.sidebar, height=1, fg_color=DIVIDER_COLOR).pack(fill="x", padx=12, pady=(0, 12))
 
         ctk.CTkButton(
             self.sidebar,
@@ -616,10 +737,27 @@ class App(ctk.CTk):
         with open(CONFIG_PATH, "r") as f:
             return json.load(f)
         
+    @log_calls
     def open_settings(self):
         if not hasattr(self, "_settings_win") or not self._settings_win.winfo_exists():
-            SettingsWindow(self)
+            self._settings_win = SettingsWindow(self)
 
+    def _apply_ui_scaling(self, factor):
+        '''Override CustomTkinter's (unreliable on Linux) DPI auto-detection.'''
+        ctk.set_widget_scaling(factor)
+        ctk.set_window_scaling(factor)
+
+    @log_calls
+    def set_ui_scaling(self, factor):
+        '''Apply a new UI scaling factor live and persist it to Config.json.'''
+        self.ui_scaling = factor
+        self._apply_ui_scaling(factor)
+        self.config.setdefault("UI", {})["Scaling"] = factor
+        with open(CONFIG_PATH, 'w') as f:
+            json.dump(self.config, f, indent=4)
+        logger.info("UI scaling set to %.0f%%", factor * 100)
+
+    @log_calls
     def load_zone_data(self):
         '''
         Scan the STO "global truth" sheet for the current Zone ID -> Dock/Cell mapping and
@@ -636,9 +774,9 @@ class App(ctk.CTk):
             glossary.ZONE_NAMES.update(zone_names)
             glossary.ZONE_TYPES.clear()
             glossary.ZONE_TYPES.update(zone_types)
-            print(f"Loaded {len(zone_names)} zones from the STO sheet.")
+            logger.info("Loaded %d zones from the STO sheet.", len(zone_names))
         except Exception as e:
-            print(f"Zone scan failed, using hardcoded fallback: {e}")
+            logger.warning("Zone scan failed, using hardcoded fallback: %s", e)
             self.after(800, lambda err=e: self._notify_zone_fallback(err))
 
     def _notify_zone_fallback(self, error):
@@ -655,6 +793,7 @@ class App(ctk.CTk):
         This code will find the repo folder that was created when the initial repo was cloned, search if that repo
         has a more recent push to it, and finally pull that change and apply it to the current code base. 
     '''
+    @log_calls
     def update_from_git(self):
         start_path = Path.Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path.Path(__file__).parent
         try:
@@ -668,13 +807,15 @@ class App(ctk.CTk):
             if local_vers != remote_vers:
                 self.after(0, lambda: UpdateWindow(self, on_update=lambda win: self._start_pull(origin, win)))
         except Exception as e:
-            print(f"Git update check failed: {e}")
+            logger.warning("Git update check failed: %s", e)
 
+    @log_calls
     def _start_pull(self, origin, win):
         win.update_btn.configure(state="disabled", text="Updating...")
         win.msg_label.configure(text="Pulling latest changes...")
         threading.Thread(target=self._do_pull, args=(origin, win), daemon=True).start()
 
+    @log_calls
     def _do_pull(self, origin, win):
         try:
             origin.pull()
@@ -682,12 +823,14 @@ class App(ctk.CTk):
         except Exception as e:
             self.after(0, lambda: win.msg_label.configure(text=f"Update failed: {e}", text_color="#CC3333"))
     
+    @log_calls
     def _check_config_version(self):
         current = self.config.get("Version")
         required = glossary.CONFIG_VERSION
         if current != required:
             ConfigUpdateWindow(self, current, required, on_update=self._do_config_update)
 
+    @log_calls
     def _do_config_update(self, win):
         win.keep_btn.grid_remove()
         win.update_btn.grid_remove()
@@ -726,7 +869,7 @@ class App(ctk.CTk):
         
         self.get_config_option(test_name=test_type)
         sheet = self.selected_option['Sheet']
-        print(sheet)
+        logger.debug("Sheet option for %s: %s", test_type, sheet)
         if isinstance(sheet, dict):
             files = Decision_matrix.multiple_sheets_response(sheet.get('Folder', {}), self.authentication)
             return [[f['name'] for f in files]]
@@ -779,6 +922,7 @@ class App(ctk.CTk):
             self._new_sheet_name_entry.grid_remove()
         self._check_generate_ready()
 
+    @log_calls
     def create_sheet_from_template(self):
         template = self.selected_option['Sheet']['Template']
         name = self._new_sheet_name_var.get().strip()
@@ -803,6 +947,7 @@ class App(ctk.CTk):
         self.worksheet_selection = self.worksheet_template_var.get()
         self._check_generate_ready()
 
+    @log_calls
     def check_robot_online(self):
         nickname = self._robot_entry_var.get().strip().lower()
         if not nickname:
@@ -811,7 +956,7 @@ class App(ctk.CTk):
             self._check_generate_ready()
             return
         self._robot_entry_var.set(nickname)
-        self._robot_status_label.configure(text="Checking...", text_color="gray70")
+        self._robot_status_label.configure(text="Checking...", text_color=SUBTLE_TEXT)
         threading.Thread(target=self._robot_check_worker, args=(nickname,), daemon=True).start()
 
     def _robot_check_worker(self, nickname):
@@ -835,6 +980,7 @@ class App(ctk.CTk):
         ready = robot_ok and sheet_ok and worksheet_ok and template_name_ok
         self._generate_btn.configure(state="normal" if ready else "disabled")
 
+    @log_calls
     def on_generate(self):
         self._generate_btn.configure(state="disabled")
         progress_win = ProgressWindow(self)
@@ -857,17 +1003,15 @@ class App(ctk.CTk):
                 else:
                     sheet = self.authentication.open(title=sheet_title)
                 
-                print(self.sheet_name)
+                logger.info("Generating sheet '%s' for %s", self.sheet_name, self.robot_selection)
                 Sheets_editor.sheet_editor(
                     self.authentication, sheet, self.worksheet_selection,
                     self.test_data, self.sheet_name, self.robot_selection,
                     progress_cb=report
                 )
                 completed[0] = True
-            except Exception as e:
-                import traceback
-                traceback.print_exc()
-                print(f"Generate failed: {e}")
+            except Exception:
+                logger.exception("Sheet generation failed")
             finally:
                 def _finish():
                     if progress_win.winfo_exists():
@@ -890,7 +1034,7 @@ class App(ctk.CTk):
         sheet_tab = self.tab_view.tab("Sheet Editor")
         options = list(self.config.get("Options", {}).keys())
 
-        self.sheet_frame = ctk.CTkFrame(sheet_tab, fg_color="gray20")
+        self.sheet_frame = ctk.CTkFrame(sheet_tab, fg_color=PANEL_COLOR)
         self.sheet_frame.pack(fill="x", padx=12, pady=(0, 12))
 
         ctk.CTkLabel(self.sheet_frame, text="Test Type:").grid(
@@ -1088,8 +1232,7 @@ class App(ctk.CTk):
         try:
             robot_api = self.get_robot_api()
         except Exception:
-            import traceback
-            traceback.print_exc()
+            logger.exception("Failed to fetch robot API data")
             robot_api = None
 
         return robot_api
@@ -1111,7 +1254,7 @@ class App(ctk.CTk):
             header, text="− Remove Robot", width=120, fg_color="gray40", command=self._open_remove_robot
         ).pack(side="right", padx=(0, 8))
 
-        self.afse_frame = ctk.CTkScrollableFrame(afse_tab, fg_color="gray20")
+        self.afse_frame = ctk.CTkScrollableFrame(afse_tab, fg_color=PANEL_COLOR)
         self.afse_frame.pack(fill="both", expand=True, padx=12, pady=(0, 12))
 
         for col in range(ROBOT_CARD_COLS):
@@ -1139,7 +1282,7 @@ class App(ctk.CTk):
             status_color, status_label = STATUS_COLORS[color_code]
             charge_color, charge_status = CHARGE_STATUS[charge_code]
 
-            card = ctk.CTkFrame(self.afse_frame, fg_color="gray30", corner_radius=8)
+            card = ctk.CTkFrame(self.afse_frame, fg_color=CARD_COLOR, corner_radius=8)
             card.grid(row=i // ROBOT_CARD_COLS, column=i % ROBOT_CARD_COLS, padx=8, pady=8, sticky="nsew")
             self._afse_cards.append(card)
 
@@ -1147,7 +1290,7 @@ class App(ctk.CTk):
 
             robot_charge = ctk.CTkLabel(card, text=f"{charge:.0f}%", font=ctk.CTkFont(size=24, weight="bold"))
             robot_charge.pack(pady=(4, 0))
-            ctk.CTkLabel(card, text="Charge", text_color="gray70", font=ctk.CTkFont(size=11)).pack(pady=(0, 8))
+            ctk.CTkLabel(card, text="Charge", text_color=SUBTLE_TEXT, font=ctk.CTkFont(size=11)).pack(pady=(0, 8))
             robot_charge_status = ctk.CTkLabel(card, text=charge_status, text_color= charge_color, font=ctk.CTkFont(size=11))
             robot_charge_status.pack(pady=(0, 8))
 
@@ -1157,18 +1300,20 @@ class App(ctk.CTk):
             robot_status.pack(pady=6)
 
             zone_text = ZONE_NAMES.get(zone_id, 'Not in a Zone')
-            robot_zone = ctk.CTkLabel(card, text=zone_text, text_color="gray80", font=ctk.CTkFont(size=12))
+            robot_zone = ctk.CTkLabel(card, text=zone_text, text_color=SUBTLE_TEXT, font=ctk.CTkFont(size=12))
             robot_zone.pack(pady=(0, 10))
 
             self.afse_instances.append([robot_charge, status_badge, robot_status, robot_charge_status, robot_zone])
             self._bind_card_click(card, i)
 
+    @log_calls
     def _open_add_robot(self):
         if getattr(self, "_add_robot_win", None) is not None and self._add_robot_win.winfo_exists():
             self._add_robot_win.focus()
             return
         self._add_robot_win = AddRobotWindow(self, self.config['AFSE']['Robots'], self._add_robot_to_config)
 
+    @log_calls
     def _add_robot_to_config(self, name):
         '''Persist a new robot to the config's AFSE list and refresh the tab. Runs on the
         main thread (invoked from AddRobotWindow after a successful reachability check).'''
@@ -1177,12 +1322,14 @@ class App(ctk.CTk):
             json.dump(self.config, f, indent=4)
         self._reload_afse()
 
+    @log_calls
     def _open_remove_robot(self):
         if getattr(self, "_remove_robot_win", None) is not None and self._remove_robot_win.winfo_exists():
             self._remove_robot_win.focus()
             return
         self._remove_robot_win = RemoveRobotWindow(self, self.config['AFSE']['Robots'], self._remove_robot_from_config)
 
+    @log_calls
     def _remove_robot_from_config(self, name):
         '''Strip a robot from the config's AFSE list, persist, and refresh the tab.'''
         robots = self.config['AFSE']['Robots']
@@ -1194,6 +1341,7 @@ class App(ctk.CTk):
             json.dump(self.config, f, indent=4)
         self._reload_afse()
 
+    @log_calls
     def _reload_afse(self):
         '''One-shot fetch + re-render so a newly added robot shows immediately, without
         starting a second refresh loop (the existing 5s loop keeps running).'''
@@ -1215,6 +1363,7 @@ class App(ctk.CTk):
         for child in widget.winfo_children():
             self._bind_recursive(child, handler)
 
+    @log_calls
     def _open_robot_window(self, index):
         if index >= len(self.latest_robot_api):
             return

@@ -94,7 +94,7 @@ CAMERA_CHANNELS = {               # robot Zone ID -> 1-based NVR channel number
     62  : 9
     }
 
-CONFIG_VERSION = "1.1.0"
+CONFIG_VERSION = "1.2.0"
 
 CONFIG_TEMPALTE =  {
     "Version": CONFIG_VERSION,
@@ -173,8 +173,11 @@ CONFIG_TEMPALTE =  {
             "sb25",
             "sb17",
             "sb18"
-            
+
         ]
+    },
+    "UI": {
+        "Scaling": 1.0
     }
 }
 

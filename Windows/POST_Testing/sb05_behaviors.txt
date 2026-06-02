@@ -1,0 +1,141 @@
+{'behaviorId': 70002, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'allowSafetyProfileOverride': True}, 'dependentLocation': [257, 512]}
+{'behaviorId': 60200, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [512], 'label': ['dvt', 'excitation']}
+{'behaviorId': 60116, 'safetyConsideration': {'armMovement': 2, 'baseMovement': 2, 'safetyProfile': 5}, 'dependentLocation': [257], 'label': ['dvt', 'excitation']}
+{'behaviorId': 60111, 'safetyConsideration': {'armMovement': 2, 'baseMovement': 2, 'safetyProfile': 5}, 'dependentLocation': [257], 'label': ['dvt', 'excitation']}
+{'behaviorId': 60110, 'safetyConsideration': {'armMovement': 2, 'baseMovement': 2, 'safetyProfile': 5}, 'dependentLocation': [257], 'label': ['dvt', 'excitation']}
+{'behaviorId': 60100, 'safetyConsideration': {'armMovement': 2, 'baseMovement': 2, 'safetyProfile': 5}, 'dependentLocation': [257], 'label': ['dvt', 'excitation']}
+{'behaviorId': 60022, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['fat', 'burnin']}
+{'behaviorId': 60021, 'morphology': ['Unicorn Gripper'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['dvt', 'reliability']}
+{'behaviorId': 60020, 'morphology': ['Full Robot', 'Alpha V2 24KG Gripper'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['dvt', 'reliability']}
+{'behaviorId': 60017, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['fat', 'burnin']}
+{'behaviorId': 60012, 'morphology': ['Vacuum FAT', 'Full Robot', 'Major Stretch', 'Unicorn Gripper'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['dvt', 'vacuum']}
+{'behaviorId': 60011, 'morphology': ['Vacuum FAT', 'Full Robot', 'Major Stretch', 'Unicorn Gripper'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['dvt', 'vacuum']}
+{'behaviorId': 60010, 'morphology': ['Vacuum FAT', 'Full Robot', 'Major Stretch', 'Unicorn Gripper'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['dvt', 'vacuum']}
+{'behaviorId': 60009, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['dvt', 'reliability']}
+{'behaviorId': 60003, 'morphology': ['Full Robot', 'Alpha V2 24KG Gripper'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['dvt', 'reliability']}
+{'behaviorId': 60001, 'morphology': ['Full Robot', 'Alpha V2 24KG Gripper'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['dvt', 'reliability']}
+{'behaviorId': 40043, 'morphology': ['Full Robot', 'Base Only', 'Major Stretch'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1}, 'dependentLocation': [1], 'label': ['maintenance']}
+{'behaviorId': 40042, 'morphology': ['Full Robot', 'Base Only', 'Major Stretch'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1}, 'dependentLocation': [1], 'label': ['maintenance']}
+{'behaviorId': 40040, 'morphology': ['Full Robot', 'Base Only', 'Major Stretch'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1}, 'dependentLocation': [1], 'label': ['maintenance']}
+{'behaviorId': 40039, 'morphology': ['Full Robot', 'Base Only', 'Major Stretch'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1}, 'dependentLocation': [1], 'label': ['maintenance']}
+{'behaviorId': 40033, 'morphology': ['Full Robot', 'Base Only', 'Major Stretch'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1}, 'dependentLocation': [1], 'label': ['maintenance']}
+{'behaviorId': 40032, 'morphology': ['Full Robot', 'Base Only', 'Major Stretch'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1}, 'dependentLocation': [1], 'label': ['maintenance']}
+{'behaviorId': 40023, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'allowSafetyProfileOverride': True}, 'dependentLocation': [256], 'label': ['maintenance']}
+{'behaviorId': 40022, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4, 'allowSafetyProfileOverride': True}, 'dependentLocation': [512], 'label': ['service', 'health', 'arm']}
+{'behaviorId': 40034, 'morphology': ['Full Robot', 'Base Only', 'Major Stretch'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1}, 'dependentLocation': [1], 'label': ['maintenance']}
+{'behaviorId': 40008, 'morphology': ['Full Robot', 'Major Stretch', 'FAT Distal Module'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['fat', 'distal']}
+{'behaviorId': 40006, 'morphology': ['FAT ISG + Vacuum', 'FAT ISG'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['fat', 'calibration']}
+{'behaviorId': 40005, 'morphology': ['Full Robot', 'Major Stretch', 'FAT Distal Module'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['fat', 'distal']}
+{'behaviorId': 40004, 'morphology': ['Full Robot', 'Major Stretch', 'FAT Distal Module'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['fat', 'distal']}
+{'behaviorId': 30006, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [512, 560], 'label': ['service', 'health', 'gripper']}
+{'behaviorId': 60108, 'safetyConsideration': {'armMovement': 2, 'baseMovement': 2, 'safetyProfile': 5}, 'dependentLocation': [257], 'label': ['dvt', 'excitation']}
+{'behaviorId': 20006, 'morphology': ['Full Robot', 'Major Stretch', 'FAT Mast Subassembly'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [256], 'label': ['service', 'health', 'mast']}
+{'behaviorId': 60002, 'morphology': ['Full Robot', 'Alpha V2 24KG Gripper'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['dvt', 'reliability']}
+{'behaviorId': 20004, 'morphology': ['Full Robot', 'Major Stretch', 'FAT Mast Subassembly'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [256], 'label': ['service', 'health', 'mast']}
+{'behaviorId': 20003, 'morphology': ['Full Robot', 'Major Stretch', 'FAT Mast Subassembly'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [256], 'label': ['service', 'health', 'mast']}
+{'behaviorId': 20002, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 3, 'safetyProfile': 3}, 'dependentLocation': [257], 'label': ['service', 'health', 'base']}
+{'behaviorId': 10012, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [512, 560], 'label': ['service', 'health', 'gripper']}
+{'behaviorId': 60201, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [512], 'label': ['dvt', 'excitation']}
+{'behaviorId': 60015, 'morphology': ['Full Robot', 'Major Stretch'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'allowSafetyProfileOverride': True}, 'dependentLocation': [257, 512]}
+{'behaviorId': 10010, 'morphology': ['Full Robot', 'FAT Distal Module', 'Major Stretch'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [512], 'label': ['service', 'health', 'arm']}
+{'behaviorId': 10008, 'morphology': ['Full Robot', 'Major Stretch', 'Base Only'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 3, 'safetyProfile': 3}, 'dependentLocation': [257, 512], 'label': ['service', 'health', 'arm']}
+{'behaviorId': 10005, 'morphology': ['Full Robot', 'Major Stretch', 'FAT Mast Subassembly'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [768], 'label': ['service', 'health', 'mast']}
+{'behaviorId': 9013, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 2}, 'dependentLocation': [258, 262, 336, 305, 513, 544, 769], 'label': ['production', 'pendant']}
+{'behaviorId': 9012, 'morphology': ['Full Robot', 'Unicorn Gripper'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development']}
+{'behaviorId': 9010, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['dvt', 'reliability']}
+{'behaviorId': 9007, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 2}, 'dependentLocation': [258, 262, 336, 305, 513, 544, 769], 'label': ['production', 'pendant']}
+{'behaviorId': 9004, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [258, 262, 336, 305, 513, 544, 769], 'label': ['production', 'swi']}
+{'behaviorId': 40037, 'morphology': ['Full Robot', 'Base Only', 'Major Stretch'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1}, 'dependentLocation': [1], 'label': ['maintenance']}
+{'behaviorId': 40024, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'allowSafetyProfileOverride': True}, 'dependentLocation': [256], 'label': ['service', 'health']}
+{'behaviorId': 9002, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['production', 'swi']}
+{'behaviorId': 30008, 'morphology': ['Gripper/Vacuum FAT'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['fat', 'gripper']}
+{'behaviorId': 20011, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [256], 'label': ['service', 'health', 'mast']}
+{'behaviorId': 60005, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['dvt', 'reliability']}
+{'behaviorId': 3537, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['development']}
+{'behaviorId': 20007, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [256], 'label': ['service', 'health', 'mast']}
+{'behaviorId': 3102, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development', 'conveyor']}
+{'behaviorId': 40030, 'morphology': ['Full Robot', 'Major Stretch', 'FAT Mast Subassembly', 'Teststand M0'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['fat', 'mast']}
+{'behaviorId': 3101, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development', 'conveyor']}
+{'behaviorId': 3059, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development', 'conveyor']}
+{'behaviorId': 3058, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development', 'conveyor']}
+{'behaviorId': 40035, 'morphology': ['Full Robot', 'Base Only', 'Major Stretch'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1}, 'dependentLocation': [1], 'label': ['maintenance']}
+{'behaviorId': 3057, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development', 'conveyor']}
+{'behaviorId': 3053, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development', 'conveyor']}
+{'behaviorId': 20001, 'morphology': ['Major Stretch', 'Base Only'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 3, 'safetyProfile': 5}, 'dependentLocation': [257], 'label': ['fat', 'base']}
+{'behaviorId': 3052, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development', 'conveyor']}
+{'behaviorId': 3050, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development', 'conveyor']}
+{'behaviorId': 3000, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [256], 'label': ['service', 'calibration']}
+{'behaviorId': 10007, 'morphology': ['Full Robot', 'Major Stretch'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [512], 'label': ['service', 'health', 'arm']}
+{'behaviorId': 199, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': -1}, 'dependentLocation': [1], 'label': ['production', 'swi']}
+{'behaviorId': 60019, 'morphology': ['Unicorn Gripper'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['dvt', 'reliability']}
+{'behaviorId': 40031, 'morphology': ['Full Robot', 'Major Stretch', 'FAT Mast Subassembly', 'Teststand M0'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['fat', 'mast']}
+{'behaviorId': 10006, 'morphology': ['Full Robot', 'Major Stretch'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [256], 'label': ['service', 'health', 'gripper']}
+{'behaviorId': 40036, 'morphology': ['Full Robot', 'Base Only', 'Major Stretch'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1}, 'dependentLocation': [1], 'label': ['maintenance']}
+{'behaviorId': 9006, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 9}, 'dependentLocation': [258, 336, 305, 513, 544, 769], 'label': ['production', 'pendant']}
+{'behaviorId': 2111, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['development']}
+{'behaviorId': 9011, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['dvt', 'reliability']}
+{'behaviorId': 2051, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['development', 'gripper']}
+{'behaviorId': 41, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': 5}, 'dependentLocation': [0], 'label': ['development']}
+{'behaviorId': 60107, 'safetyConsideration': {'armMovement': 2, 'baseMovement': 2, 'safetyProfile': 5}, 'dependentLocation': [257], 'label': ['dvt', 'excitation']}
+{'behaviorId': 104, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['development']}
+{'behaviorId': 64, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 3, 'safetyProfile': 3}, 'dependentLocation': [256], 'label': ['service', 'calibration']}
+{'behaviorId': 9001, 'morphology': ['Full Robot', 'Base Only'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 3, 'safetyProfile': 5}, 'dependentLocation': [258, 336, 304, 272], 'label': ['development']}
+{'behaviorId': 2109, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256]}
+{'behaviorId': 30002, 'morphology': ['Full Robot', 'Major Stretch', 'Gripper/Vacuum FAT'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [560, 528], 'label': ['service', 'health', 'gripper']}
+{'behaviorId': 9008, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [257, 512], 'label': ['service', 'behavior']}
+{'behaviorId': 2112, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['test']}
+{'behaviorId': 3003, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [257, 512], 'label': ['service', 'behavior']}
+{'behaviorId': 102, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['development']}
+{'behaviorId': 10004, 'morphology': ['Full Robot', 'Major Stretch', 'Base Only'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 3}, 'dependentLocation': [272], 'label': ['service', 'health', 'base']}
+{'behaviorId': 3100, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development', 'conveyor']}
+{'behaviorId': 40025, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': 5}, 'dependentLocation': [256]}
+{'behaviorId': 9005, 'morphology': ['Full Robot', 'Base Only'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 3, 'safetyProfile': 1}, 'dependentLocation': [258, 336, 304, 272], 'label': ['production', 'pendant']}
+{'behaviorId': 70001, 'morphology': ['Full Robot', 'Major Stretch'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'allowSafetyProfileOverride': True}, 'dependentLocation': [257, 512]}
+{'behaviorId': 40021, 'morphology': ['Major Stretch', 'Gripper/Vacuum FAT'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['fat', 'vacuum']}
+{'behaviorId': 60109, 'safetyConsideration': {'armMovement': 2, 'baseMovement': 2, 'safetyProfile': 5}, 'dependentLocation': [257], 'label': ['dvt', 'excitation']}
+{'behaviorId': 3001, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4}, 'dependentLocation': [256], 'label': ['calibration']}
+{'behaviorId': 2107, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['development']}
+{'behaviorId': 3061, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development', 'conveyor']}
+{'behaviorId': 2042, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['development']}
+{'behaviorId': 60018, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['fat', 'burnin']}
+{'behaviorId': 40041, 'morphology': ['Full Robot', 'Base Only', 'Major Stretch'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1}, 'dependentLocation': [1], 'label': ['maintenance']}
+{'behaviorId': 50, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 3, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['casepick']}
+{'behaviorId': 2113, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development']}
+{'behaviorId': 60014, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['dvt', 'reliability']}
+{'behaviorId': 63, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['development']}
+{'behaviorId': 40, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'allowSafetyProfileOverride': True}, 'dependentLocation': [257, 512], 'label': ['production', 'swi']}
+{'behaviorId': 20012, 'morphology': ['Base Only', ' Major Stretch'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1}, 'dependentLocation': [256], 'label': ['maintenance']}
+{'behaviorId': 42, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': 5, 'allowSafetyProfileOverride': True}, 'dependentLocation': [0], 'label': ['development']}
+{'behaviorId': 20009, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4, 'allowSafetyProfileOverride': True}, 'dependentLocation': [256], 'label': ['service', 'health']}
+{'behaviorId': 2106, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['development']}
+{'behaviorId': 2900, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': -2}, 'dependentLocation': [257, 512], 'label': ['casepick', 'localization']}
+{'behaviorId': 10619, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [512], 'label': ['casepick']}
+{'behaviorId': 2901, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': -2}, 'dependentLocation': [257, 512], 'label': ['casepick', 'localization']}
+{'behaviorId': 17, 'morphology': ['Major Stretch', 'Roadkill', 'Ebox Only', 'Teststand A0', 'Teststand A1', 'Teststand A2', 'Teststand A3', 'Teststand A4', 'Teststand A5', 'Teststand A6', 'Teststand M0', 'Teststand S0', 'Teststand D0', 'Teststand Swerve', 'Teststand Vacuum', 'Major Stretch', 'FAT ISG + Vacuum', 'FAT ISG', 'p0 Teststand', 'Teststand Swerve IPM 27w', 'Teststand Swerve SPM 27w', 'Teststand Swerve IPM 29w', 'Teststand Swerve SPM 29w', 'Teststand A0 SPM 27w Gear Ratio 90', 'Teststand A0 SPM 27w Gear Ratio 131_5'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['calibration']}
+{'behaviorId': 3051, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development', 'conveyor']}
+{'behaviorId': 3010, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4, 'allowSafetyProfileOverride': True}, 'dependentLocation': [512, 257], 'label': ['service', 'calibration']}
+{'behaviorId': 9009, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['development']}
+{'behaviorId': 60004, 'morphology': ['Full Robot', 'Unicorn Gripper'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 3, 'safetyProfile': 3}, 'dependentLocation': [256], 'label': ['dvt', 'reliability']}
+{'behaviorId': 40038, 'morphology': ['Full Robot', 'Base Only', 'Major Stretch'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1}, 'dependentLocation': [1], 'label': ['maintenance']}
+{'behaviorId': 60300, 'morphology': ['Teststand A0', 'Teststand A1', 'Teststand A2', 'Teststand A3', 'Teststand A4', 'Teststand A5', 'Teststand A6', 'Teststand M0', 'Teststand Swerve', 'Teststand Vacuum', 'p0 Teststand', 'Teststand Swerve IPM 27w', 'Teststand Swerve SPM 27w', 'Teststand Swerve IPM 29w', 'Teststand Swerve SPM 29w'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': 5}, 'dependentLocation': [512], 'label': ['dvt', 'excitation']}
+{'behaviorId': 10620, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 2, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['casepick', 'localization']}
+{'behaviorId': 39, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': 5, 'allowSafetyProfileOverride': True}, 'dependentLocation': [0], 'label': ['production', 'swi']}
+{'behaviorId': 3060, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development', 'conveyor']}
+{'behaviorId': 60023, 'morphology': ['Full Robot', 'Alpha V2 24KG Gripper'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['dvt', 'reliability']}
+{'behaviorId': 40007, 'morphology': ['Full Robot', 'Major Stretch', 'FAT Distal Module'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['fat', 'distal']}
+{'behaviorId': 200, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': -1}, 'dependentLocation': [1], 'label': ['production']}
+{'behaviorId': 60016, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['fat', 'burnin']}
+{'behaviorId': 10621, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [512], 'label': ['casepick']}
+{'behaviorId': 10617, 'morphology': ['Full Robot'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['casepick', 'localization']}
+{'behaviorId': 2034, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256]}
+{'behaviorId': 2040, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4, 'allowSafetyProfileOverride': True}, 'dependentLocation': [256], 'label': ['service', 'health']}
+{'behaviorId': 2050, 'morphology': ['Full Robot', 'Major Stretch', 'Gripper/Vacuum FAT'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['maintenance']}
+{'behaviorId': 40020, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['fat']}
+{'behaviorId': 2052, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256]}
+{'behaviorId': 3054, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development', 'conveyor']}
+{'behaviorId': 10100, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 4, 'allowSafetyProfileOverride': True}, 'dependentLocation': [526], 'label': ['service', 'health', 'arm']}
+{'behaviorId': 2105, 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['development']}
+{'behaviorId': 20013, 'morphology': ['Full Robot', ' Major Stretch'], 'safetyConsideration': {'armMovement': 1, 'baseMovement': 1}, 'dependentLocation': [256], 'label': ['maintenance']}
+{'behaviorId': 2053, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [256], 'label': ['development', 'gripper']}
+{'behaviorId': 2108, 'morphology': ['Alpha V1', 'Alpha V2', 'Alpha V1 PSG', 'Alpha V2 PSG'], 'safetyConsideration': {'armMovement': 3, 'baseMovement': 1, 'safetyProfile': 5}, 'dependentLocation': [257, 512], 'label': ['development']}
+{'behaviorId': 2902, 'safetyConsideration': {'armMovement': 3, 'baseMovement': 3, 'safetyProfile': -2}, 'dependentLocation': [257, 512], 'label': ['casepick', 'localization']}

@@ -1,0 +1,80 @@
+Metadata-Version: 2.1
+Name: auto-update
+Version: 0.1.1
+Summary: auto-update is a Python package designed to update Python projects installed on client systems that do not have Git installed. It retrieves the latest release from a specified GitHub repository, compares it with the currently installed version, and updates the project accordingly.
+Author-email: Shaik Abdus Samad <shaiksamad.dev@gmail.com>
+License: MIT License
+        
+        Copyright (c) 2024 Shaik Abdus Samad
+        
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+        
+        The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.
+        
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+        
+Project-URL: Homepage, https://github.com/shaiksamad/auto-update.git
+Project-URL: Repository, https://github.com/shaiksamad/auto-update.git
+Project-URL: Issues, https://github.com/shaiksamad/auto-update/issues
+Keywords: update,auto update scripts,auto update,python script update
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: requests
+Requires-Dist: diff-parser
+
+# PyUpdater
+
+`auto-update` is a Python package designed to update Python projects installed on client systems that do not have Git installed. It retrieves the latest release from a specified GitHub repository, compares it with the currently installed version, and updates the project accordingly.
+
+
+## Installation
+
+You can install PyUpdater via pip:
+
+```bash
+pip install auto-update
+```
+
+# Usage
+
+Create a new file `_auto_update.py` in the project root. Replace `owner` with your github username and `repo` with your github repository. Replace `release` with your release name.
+
+### _auto_update.py
+```python
+"""
+{owner}/{repo}
+{release}
+"""
+
+from auto_update import Updater
+
+
+updater = Updater(__doc__.strip())
+```
+
+
+`Updater` will then check for updates and apply them if necessary. It will log its activities to a file named updater.log in the current directory.
+
+# License
+This project is licensed under the MIT [License](https://github.com/shaiksamad/auto-update/blob/main/LICENSE) - see the LICENSE file for details.
+

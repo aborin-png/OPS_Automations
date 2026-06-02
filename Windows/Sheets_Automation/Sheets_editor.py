@@ -14,12 +14,13 @@ import gspread
 import pathlib as Path
 import webbrowser
 from git import Repo
+from tkinter import messagebox
 
 from googleapiclient.errors import HttpError
 
-import Info_Parser
+from Sheets_Automation import Info_Parser
 import glossary as Gloss
-import Decision_matrix as Decision
+from Sheets_Automation import Decision_matrix as Decision
 
 #endregion
 #-----------------------------------------------------------------------------------------------------------------------------
@@ -98,11 +99,11 @@ def worksheet_duplicator(sheet, worksheet, data, option_name):
   while True:
     try:
       if count > 1 and not flag:
-        if input("This sheet is a duplicate, would you like to continue? (y/n)").lower() == 'n':
+        if not messagebox.askyesno("Duplicate Sheet", "This sheet is a duplicate, would you like to continue?"):
           return None
         else: flag = 1
 
-      dup_sheet = sheet.duplicate_sheet(worksheet.id, 2, new_sheet_name = sheet_name)
+      dup_sheet = sheet.duplicate_sheet(worksheet.id, 3, new_sheet_name = sheet_name)
       return dup_sheet
     except gspread.exceptions.APIError:
       # print(err)
@@ -115,47 +116,47 @@ def worksheet_duplicator(sheet, worksheet, data, option_name):
 #-----------------------------------------------------------------------------------------------------------------------------
 #region Main Code
 
-def main():
+def sheet_editor(auth, sheet, worksheet, config_data, option_name, robot, progress_cb=None):
   '''
   This is the main code of the script.
-  This code is responsible for polling the user to decide on what actions to be taken and for which sheets/worksheets to use. 
+  This code is responsible for polling the user to decide on what actions to be taken and for which sheets/worksheets to use.
   After the user is polled, it runs all relevant functions to acquire data from SWI, link it to the deisred data, and then write
-  the new information back to the desired  google sheet. 
+  the new information back to the desired  google sheet.
   '''
 
-  if update_from_git():
-    print('You found my secret sauce!!!')
-    return
-
+  def report(value, message):
+    if progress_cb:
+      progress_cb(value, message)
 
   try:
-    auth = authenticator()
-    user_requests = Decision.decision_handler(auth=auth)
-    
-    sheet, worksheet, config_data, option_name = user_requests
-
-    # sheet = auth.open(title=sheet)
+    report(0.3, "Opening worksheet...")
     worksheet = sheet.worksheet(worksheet)
 
-    robot_info = Info_Parser.robot_info(config_data=config_data)
+    report(0.5, "Fetching robot info...")
+    robot_info = Info_Parser.robot_info(config_data=config_data, robot=robot)
+
+    report(0.65, "Duplicating worksheet...")
     worksheet = worksheet_duplicator(sheet, worksheet, robot_info, option_name)
     if worksheet == None:
       return
 
+    report(0.8, "Reading sheet data...")
     values = worksheet.get(RANGE)
     if not values:
       print("No data found.")
       return
 
+    report(0.9, "Writing data to sheet...")
     updated_values = data_linker(values, robot_info)
-
     worksheet.update(updated_values, RANGE)
-    webbrowser.open(sheet.url)
-      
+
+    report(1.0, "Complete!")
+    webbrowser.open(worksheet.url)
+
   except HttpError as err:
       print(err)
       print('Make sure that the robot is on and is not booting up.')
 
 
 
-main()
+# main()

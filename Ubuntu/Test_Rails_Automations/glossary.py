@@ -1,23 +1,3 @@
-status_codes = {
-    1   : 'Passed',
-    2   : 'Blocked',
-    3   : 'Untested',
-    4   : 'Retest',
-    5   : 'Failed',
-    6   : 'In Progress',
-    7   : 'Failed Not Blocking',
-    8   : 'Not Part of Test Run',
-    9   : 'Completed',
-    10  : 'Meets Expectations',
-    11  : 'Not Sufficient to Standard',
-    12  : 'Exploratory',
-}
-
-class Results:
-    def __init__(self, title, id, status, url, comment = ''):
-        self.title = title
-        self.id = id
-        self.status = status
-        self.url = url
-        self.comment = comment
-        
+version https://git-lfs.github.com/spec/v1
+oid sha256:c42a485e23d8b154f4f8522401e5996735ef4f4e13b036029cbe18a0860c087c
+size 551

@@ -151,20 +151,22 @@ def get_robot_password(robot: str, field: str = "web.bd", on_auth_required=None)
     cached = _cache_get(robot, field)
     if cached is not None:
         return cached
+    
+    api = API_Fetch(robot=robot, robot_offline=[])
+    if api is None:
+        raise Exception("API_Fetch returned None, robot may be offline or unreachable.")
 
-    serial = f'ssd-{info_parser(API_Fetch(robot=robot, robot_offline=[])).description.serial}'
+    serial = f'ssd-{info_parser(api).serial}'
 
     text = _fetch_lookup_html(serial)
     if text is None:
         text = _prompt_authorize(serial, on_auth_required=on_auth_required)
     password = _parse_field(text, field)
-    # print(f"Password for {field}: {password}")
+
     if password is not None:
         _cache_set(robot, field, password)
+        logger.info("A valid Password was found in Google Cookie Cache.")
+    else:
+        logger.info("No valid Password was found in the Google Cookie Cache.")
     return password
 
-
-if __name__ == "__main__":
-    robot = sys.argv[1] if len(sys.argv) > 1 else "None"
-    field = sys.argv[2] if len(sys.argv) > 2 else "web.bd"
-    print(get_robot_password(robot, field))

@@ -10,13 +10,13 @@ from glossary import ROBOT_BEHAVIORS
 try:
     from API_Post import robot_password
 except ImportError:
-    import robot_password
+    import Automations_GUI.API_Post.robot_password as robot_password
 
 logger = logging.getLogger("OPS.robot_comms")
 
 RESPONSE_STATUS_CODES = {
     "200": "OK - The request was successful and the server responded with the requested data.",
-    "400": "Bad Request - The server could not understand the request due to invalid syntax",
+    "400": "Bad Request - The server could not understand the request due to an invalid payload format",
 }
 
 
@@ -27,7 +27,7 @@ def status_code_meaning(status_code):
     if status_code_str.startswith("5"):
         return "Unexpected Error - The server encountered an unexpected condition that prevented it from fulfilling the request."
     else:
-        return RESPONSE_STATUS_CODES.get(status_code_str, "Unknown Status Code")
+        return RESPONSE_STATUS_CODES.get(status_code_str, "Unexpected Status Code")
 
 
 # Post command for soft reboot using python

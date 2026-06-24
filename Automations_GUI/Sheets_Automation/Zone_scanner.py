@@ -9,7 +9,7 @@ like "Zone 203 - TVG"), and returns:
     zone_names : {zone_id (int) -> dock/cell name (str)}
     zone_types : {zone_id (int) -> 'Dock' | 'Cell'}
 
-The caller (UI_Handler) overwrites glossary.ZONE_NAMES / glossary.ZONE_TYPES in place
+The caller (UI_Handler) overrides glossary.ZONE_NAMES / glossary.ZONE_TYPES in place
 with these results, falling back to the hardcoded values in glossary.py if the scan fails.
 """
 #-----------------------------------------------------------------------------------------------------------------------------

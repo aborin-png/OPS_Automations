@@ -23,9 +23,12 @@ ZONE_NAMES = Gloss.ZONE_NAMES
 
 
 def info_parser(string_data):
-    """This simple code is meant to turn the string of data from SWI into a python class, allowing
-    each data member to be accessed using dot notation."""
-    return json.loads(string_data, object_hook=lambda d: SimpleNamespace(**d))
+    """Turn the raw robot-info payload from SWI into a RobotInfo object.
+
+    All knowledge of the API's nested shape lives in RobotInfo.from_api; callers just read the flat,
+    documented attributes off the returned object.
+    """
+    return Gloss.RobotInfo.from_api(string_data)
 
 
 def get_config(config_path):
@@ -34,14 +37,18 @@ def get_config(config_path):
         return json.loads(file, object_hook=lambda d: SimpleNamespace(**d))
 
 
-def config_recontruction(dict_to_reconstruct, data):
-    """This function is responsible for reconstructing the data extracted from the config file into
-    usuable code that python can interpret and itemize into a class structure."""
+def config_recontruction(data_map, robot_data):
+    """Pair each sheet column label in the config's "Data" block with the corresponding value from a
+    RobotInfo instance.
 
-    items = dict_to_reconstruct.items() if isinstance(dict_to_reconstruct,
-                                                      dict) else vars(dict_to_reconstruct).items()
+    The config maps a column label (e.g. "SW Version") to a RobotInfo attribute / property name
+    (e.g. "sw_version"); this looks each one up with getattr -- no eval -- and returns the
+    Glossary(location, data) list (in config order) that Sheets_editor consumes positionally.
+    """
+    items = data_map.items() if isinstance(data_map, dict) else vars(data_map).items()
     return [
-        Gloss.Glossary(location=location, data=eval(data_member)) for location, data_member in items
+        Gloss.Glossary(location=location, data=getattr(robot_data, attr_name))
+        for location, attr_name in items
     ]
 
 
@@ -52,4 +59,4 @@ def robot_info(config_data, robot):
     """
     data = info_parser(API_Fetch(robot=robot, robot_offline=[]))
 
-    return config_recontruction(config_data, data=data)
+    return config_recontruction(config_data, robot_data=data)

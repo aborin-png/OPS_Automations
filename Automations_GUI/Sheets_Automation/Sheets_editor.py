@@ -10,6 +10,7 @@ info.
 #-----------------------------------------------------------------------------------------------------------------------------
 #region Includes
 
+import logging
 import os
 import pathlib as Path
 import sys
@@ -17,10 +18,11 @@ import webbrowser
 from tkinter import messagebox
 
 import glossary as Gloss
+
+logger = logging.getLogger("OPS.sheets_editor")
 import gspread
 from git import Repo
 from googleapiclient.errors import HttpError
-from Sheets_Automation import Decision_matrix as Decision
 from Sheets_Automation import Info_Parser
 
 #endregion
@@ -108,7 +110,7 @@ def multiple_sheets_response(Folder, auth):
     option_list = []
 
     for count, file in enumerate(sheet_files):
-        print(f'{count + 1}: {file["name"]}')
+        logger.debug("Sheet option %d: %s", count + 1, file["name"])
         option_list.append(file)
 
     return option_list
@@ -125,7 +127,7 @@ def sheet_editor(auth, sheet, worksheet, config_data, option_name, robot, progre
 
     This code is responsible for polling the user to decide on what actions to be taken and for
     which sheets/worksheets to use. After the user is polled, it runs all relevant functions to
-    acquire data from SWI, link it to the deisred data, and then write the new information back to
+    acquire data from SWI, link it to the desired data, and then write the new information back to
     the desired  google sheet.
     """
 
@@ -142,13 +144,13 @@ def sheet_editor(auth, sheet, worksheet, config_data, option_name, robot, progre
 
         report(0.65, "Duplicating worksheet...")
         worksheet = worksheet_duplicator(sheet, worksheet, robot_info, option_name)
-        if worksheet == None:
+        if worksheet is None:
             return
 
         report(0.8, "Reading sheet data...")
         values = worksheet.get(Gloss.GOOGLE_SHEET_RANGE)
         if not values:
-            print("No data found.")
+            logger.warning("No data found in range %s", Gloss.GOOGLE_SHEET_RANGE)
             return
 
         report(0.9, "Writing data to sheet...")
@@ -159,8 +161,7 @@ def sheet_editor(auth, sheet, worksheet, config_data, option_name, robot, progre
         webbrowser.open(worksheet.url)
 
     except HttpError as err:
-        print(err)
-        print('Make sure that the robot is on and is not booting up.')
+        logger.error("Google API error during sheet edit: %s", err)
 
 
 # main()

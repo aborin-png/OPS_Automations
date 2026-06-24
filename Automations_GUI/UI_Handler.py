@@ -17,7 +17,7 @@ from API_Post import Robot_comms, robot_password
 from git import InvalidGitRepositoryError, Repo
 from logger_setup import log_calls
 from PIL import Image, ImageTk
-from Sheets_Automation import API_fetch, Decision_matrix, Info_Parser, Sheets_editor, Zone_scanner
+from Sheets_Automation import API_fetch, Info_Parser, Sheets_editor, Zone_scanner
 
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
@@ -114,6 +114,12 @@ SUBTLE_TEXT = ("gray35", "gray70")  # secondary / hint / label text
 
 
 class SettingsWindow(ctk.CTkToplevel):
+    """Settings dialog for per-machine UI preferences.
+
+    Lets the user choose a UI scaling factor (applied live and persisted to Config.json, to work
+    around CustomTkinter's unreliable DPI auto-detection on Linux) and toggle between Light and Dark
+    appearance modes.
+    """
     SCALING_OPTIONS = ["80%", "90%", "100%", "110%", "125%", "150%", "175%", "200%"]
 
     def __init__(self, parent):
@@ -168,6 +174,11 @@ class SettingsWindow(ctk.CTkToplevel):
 
 
 class UpdateWindow(ctk.CTkToplevel):
+    """Prompt shown when a newer version of the app exists on the git remote.
+
+    Offers to pull the latest changes (handing the work off to the `on_update` callback) or to
+    cancel and keep running the current version.
+    """
 
     def __init__(self, parent, on_update):
         super().__init__(parent)
@@ -193,6 +204,11 @@ class UpdateWindow(ctk.CTkToplevel):
 
 
 class ProgressWindow(ctk.CTkToplevel):
+    """Modal progress dialog shown while a Google Sheet is being generated.
+
+    Exposes `set_progress(value, message)` so the background worker can drive the progress bar and
+    status text as it moves through the fetch / duplicate / write steps.
+    """
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -219,6 +235,11 @@ class ProgressWindow(ctk.CTkToplevel):
 
 
 class ConfigUpdateWindow(ctk.CTkToplevel):
+    """Prompt shown when the user's Config.json version does not match the required CONFIG_VERSION.
+
+    Warns that updating overwrites their Config.json (losing any custom edits) and offers to
+    regenerate it from the template (`on_update`) or keep the current one.
+    """
 
     def __init__(self, parent, current_version, required_version, on_update):
         super().__init__(parent)
@@ -527,6 +548,14 @@ class RemoveRobotWindow(ctk.CTkToplevel):
 
 
 class RobotDetailWindow(ctk.CTkToplevel):
+    """Detailed per-robot view opened by clicking an AFSE monitoring card.
+
+    Shows the robot's live camera feed (RTSP from the zone's Reolink NVR, streamed on a background
+    thread) alongside charge, status, and zone readouts that are refreshed in place via
+    `update_data`. Also provides action buttons (Restart AFSE, Stow Robot, Reboot Robot) that
+    retrieve the robot password and issue the command through Robot_comms, surfacing an
+    AuthWaitWindow if browser authorization is required.
+    """
 
     def __init__(self, parent, robot_name, charge, color_code, charge_code, zone_id=None,
                  camera_channel=CAMERA_DEFAULT_CHANNEL):
@@ -1202,27 +1231,6 @@ class App(ctk.CTk):
 #----------------------------------------------------------------------------------------------------------------------------------------
 #Auxiliary Functions
 
-    @staticmethod
-    def _dig(obj, path, default=None):
-        """Walk a dotted attribute path safely, returning `default` if any hop is missing."""
-        for attr in path.split('.'):
-            obj = getattr(obj, attr, None)
-            if obj is None:
-                return default
-        return obj
-
-    @classmethod
-    def _extract_zone_id(cls, data):
-        """Safely pull the connected zone id out of the robot data.
-
-        A robot can report zoneState=True while its safetydStatus is missing the zoneId field, so
-        every hop is guarded and we fall back to 'None' rather than raising.
-        """
-        if not cls._dig(data, 'zoneConnectionStatus.zoneState', False):
-            return 'None'
-        zone_id = cls._dig(data, 'zoneConnectionStatus.safetydStatus.zoneId')
-        return zone_id if zone_id is not None else 'None'
-
     def get_robot_api(self):
         robot_api = []
         robot_list = self.config['AFSE']['Robots']
@@ -1236,15 +1244,14 @@ class App(ctk.CTk):
                 if api is None:
                     raise ValueError("no API response")
 
-                data = Info_Parser.info_parser(api)
-                nickname = self._dig(data, 'description.nickname', robot)
-                soc = self._dig(data, 'status.battery.soc', 0)
-                color = self._dig(data, 'status.lightingState.color', 5)
-                charger_mode = self._dig(data, 'status.battery.chargerMode', 5)
+                info = Info_Parser.info_parser(api)
 
                 if robot in ROBOT_OFFLINE:
                     ROBOT_OFFLINE.remove(robot)
-                robot_api.append([nickname, soc, color, charger_mode, self._extract_zone_id(data)])
+                robot_api.append([
+                    info.nickname or robot, info.soc, info.lighting_color, info.charger_mode,
+                    info.connected_zone_id
+                ])
             except Exception:
                 if robot not in ROBOT_OFFLINE:
                     ROBOT_OFFLINE.append(robot)

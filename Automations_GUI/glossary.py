@@ -9,6 +9,10 @@ classes.
 #-----------------------------------------------------------------------------------------------------------------------------
 
 import datetime
+import json
+from dataclasses import dataclass
+from types import SimpleNamespace
+from typing import Optional
 
 #-----------------------------------------------------------------------------------------------------------------------------
 '''
@@ -107,7 +111,7 @@ ROBOT_BEHAVIORS = {
     "STOW": "40",
 }
 
-CONFIG_VERSION = "1.2.0"
+CONFIG_VERSION = "1.3.0"
 
 CONFIG_TEMPLATE = {
     "Version": CONFIG_VERSION,
@@ -120,24 +124,15 @@ CONFIG_TEMPLATE = {
                 "Dock": "DOCK TEST TEMPLATE"
             },
             "Data": {
-                "Robot":
-                    "data.description.nickname",
-                "Serial:":
-                    "data.description.robotSerial",
-                "SW Version":
-                    "data.release.releaseInfo.version",
-                "Battery Firmware":
-                    "data.status.battery.bms1FirmwareVersion",
-                "Battery % Started":
-                    "data.status.battery.soc",
-                "Dock #":
-                    "ZONE_NAMES[data.zoneConnectionStatus.safetydStatus.zoneId] if data.zoneConnectionStatus.zoneState else 'None'",
-                "Y0 Version":
-                    "f'{data.status.safetyState.onRobotVersion.fwMajorVersion}.0.{data.status.safetyState.onRobotVersion.apiMajorVersion}.0'",
-                "Z0 Version":
-                    "f'{data.status.safetyState.z0Version.fwMajorVersion}.{data.status.safetyState.z0Version.fwMinorVersion}.{data.status.safetyState.z0Version.apiMajorVersion}.0' if data.zoneConnectionStatus.zoneState else '0.0.0.0'",
-                "Date:":
-                    "datetime.datetime.now().strftime('%m/%d/%Y')"
+                "Robot": "nickname",
+                "Serial:": "robot_serial",
+                "SW Version": "sw_version",
+                "Battery Firmware": "battery_firmware",
+                "Battery % Started": "soc",
+                "Dock #": "dock_name",
+                "Y0 Version": "y0_version",
+                "Z0 Version": "z0_version",
+                "Date:": "date"
             }
         },
         "Performance": {
@@ -151,24 +146,15 @@ CONFIG_TEMPLATE = {
             },
             "Worksheet": "Template",
             "Data": {
-                "Robot":
-                    "data.description.nickname",
-                "Serial:":
-                    "data.description.robotSerial",
-                "SW Version":
-                    "data.release.releaseInfo.version",
-                "Battery Firmware":
-                    "data.status.battery.bms1FirmwareVersion",
-                "Battery % Started":
-                    "data.status.battery.soc",
-                "Dock #":
-                    "ZONE_NAMES[data.zoneConnectionStatus.safetydStatus.zoneId] if data.zoneConnectionStatus.zoneState else 'None'",
-                "Y0 Version":
-                    "f'{data.status.safetyState.onRobotVersion.fwMajorVersion}.0.{data.status.safetyState.onRobotVersion.apiMajorVersion}.0'",
-                "Z0 Version":
-                    "f'{data.status.safetyState.z0Version.fwMajorVersion}.{data.status.safetyState.z0Version.fwMinorVersion}.{data.status.safetyState.z0Version.apiMajorVersion}.0' if data.zoneConnectionStatus.zoneState else '0.0.0.0'",
-                "Date:":
-                    "datetime.datetime.now().strftime('%m/%d/%Y')"
+                "Robot": "nickname",
+                "Serial:": "robot_serial",
+                "SW Version": "sw_version",
+                "Battery Firmware": "battery_firmware",
+                "Battery % Started": "soc",
+                "Dock #": "dock_name",
+                "Y0 Version": "y0_version",
+                "Z0 Version": "z0_version",
+                "Date:": "date"
             }
         },
         "Endurance": {
@@ -182,24 +168,15 @@ CONFIG_TEMPLATE = {
             },
             "Worksheet": "Template",
             "Data": {
-                "Robot":
-                    "data.description.nickname",
-                "Serial:":
-                    "data.description.robotSerial",
-                "SW Version":
-                    "data.release.releaseInfo.version",
-                "Battery Firmware":
-                    "data.status.battery.bms1FirmwareVersion",
-                "Battery % Started":
-                    "data.status.battery.soc",
-                "Dock #":
-                    "ZONE_NAMES[data.zoneConnectionStatus.safetydStatus.zoneId] if data.zoneConnectionStatus.zoneState else 'None'",
-                "Y0 Version":
-                    "f'{data.status.safetyState.onRobotVersion.fwMajorVersion}.0.{data.status.safetyState.onRobotVersion.apiMajorVersion}.0'",
-                "Z0 Version":
-                    "f'{data.status.safetyState.z0Version.fwMajorVersion}.{data.status.safetyState.z0Version.fwMinorVersion}.{data.status.safetyState.z0Version.apiMajorVersion}.0' if data.zoneConnectionStatus.zoneState else '0.0.0.0'",
-                "Date:":
-                    "datetime.datetime.now().strftime('%m/%d/%Y')"
+                "Robot": "nickname",
+                "Serial:": "robot_serial",
+                "SW Version": "sw_version",
+                "Battery Firmware": "battery_firmware",
+                "Battery % Started": "soc",
+                "Dock #": "dock_name",
+                "Y0 Version": "y0_version",
+                "Z0 Version": "z0_version",
+                "Date:": "date"
             }
         }
     },
@@ -225,3 +202,125 @@ class Glossary:
 
     def new_data(self, data):
         self.data = data
+
+
+#-----------------------------------------------------------------------------------------------------------------------------
+#region RobotInfo
+
+
+@dataclass
+class RobotInfo:
+    """Every data member extracted from the robot's /api/info/robot-info endpoint, in one place.
+
+    Build instances with ``RobotInfo.from_api(raw_json_string)`` -- ``from_api`` is the ONLY code
+    that knows the nested shape of the API payload, so when the API changes there is a single place
+    to update. Each field's comment gives its original API path so the mapping is auditable at a
+    glance. Fields default to the same values the AFSE view treats as "offline", so a malformed or
+    unreachable robot degrades gracefully instead of raising.
+
+    The ``Data`` blocks in CONFIG_TEMPLATE map a sheet column label to one of the attribute /
+    property names below (see Sheets_Automation/Info_Parser.config_recontruction).
+    """
+    # --- description ---
+    nickname: str = ""                 # description.nickname
+    robot_serial: str = ""             # description.robotSerial  (shown on sheets)
+    serial: str = ""                   # description.serial       (robot password lookup)
+
+    # --- release.releaseInfo ---
+    sw_version: str = ""               # release.releaseInfo.version
+
+    # --- status.battery ---
+    battery_firmware: str = ""         # status.battery.bms1FirmwareVersion
+    soc: float = 0.0                   # status.battery.soc
+    charger_mode: int = 5              # status.battery.chargerMode    (5 == OFFLINE fallback)
+
+    # --- status.lightingState ---
+    lighting_color: int = 5            # status.lightingState.color    (5 == OFFLINE fallback)
+
+    # --- zoneConnectionStatus ---
+    zone_connected: bool = False       # zoneConnectionStatus.zoneState
+    zone_id: Optional[int] = None      # zoneConnectionStatus.safetydStatus.zoneId
+
+    # --- status.safetyState ---
+    y0_fw_major: int = 0               # status.safetyState.onRobotVersion.fwMajorVersion
+    y0_api_major: int = 0              # status.safetyState.onRobotVersion.apiMajorVersion
+    z0_fw_major: int = 0               # status.safetyState.z0Version.fwMajorVersion
+    z0_fw_minor: int = 0               # status.safetyState.z0Version.fwMinorVersion
+    z0_api_major: int = 0              # status.safetyState.z0Version.apiMajorVersion
+
+    #---- Derived values (previously computed inline by the CONFIG_TEMPLATE eval strings) ----
+
+    @property
+    def y0_version(self) -> str:
+        return f"{self.y0_fw_major}.0.{self.y0_api_major}.0"
+
+    @property
+    def z0_version(self) -> str:
+        if not self.zone_connected:
+            return "0.0.0.0"
+        return f"{self.z0_fw_major}.{self.z0_fw_minor}.{self.z0_api_major}.0"
+
+    @property
+    def date(self) -> str:
+        return datetime.datetime.now().strftime("%m/%d/%Y")
+
+    @property
+    def dock_name(self) -> str:
+        """Dock/cell name for the connected zone, or 'None'.
+
+        Reads the module-level ZONE_NAMES, which the GUI overwrites in place on startup with live
+        STO-sheet data (see UI_Handler.load_zone_data), so this always reflects current zones.
+        """
+        if self.zone_connected and self.zone_id is not None:
+            return ZONE_NAMES.get(self.zone_id, "None")
+        return "None"
+
+    @property
+    def connected_zone_id(self):
+        """Zone id when connected, else the string 'None' -- the convention the AFSE view uses as a
+        ZONE_NAMES / CAMERA_CHANNELS lookup key."""
+        if self.zone_connected and self.zone_id is not None:
+            return self.zone_id
+        return "None"
+
+    #---- Construction ----
+
+    @classmethod
+    def from_api(cls, raw: str) -> "RobotInfo":
+        """Parse a raw robot-info payload (the string returned by API_fetch.API_Fetch) into a
+        RobotInfo. This is the single source of truth for the API's nested field paths."""
+        data = json.loads(raw, object_hook=lambda d: SimpleNamespace(**d))
+        dig = cls._dig
+        return cls(
+            nickname=dig(data, "description.nickname", ""),
+            robot_serial=dig(data, "description.robotSerial", ""),
+            serial=dig(data, "description.serial", ""),
+            sw_version=dig(data, "release.releaseInfo.version", ""),
+            battery_firmware=dig(data, "status.battery.bms1FirmwareVersion", ""),
+            soc=dig(data, "status.battery.soc", 0.0),
+            charger_mode=dig(data, "status.battery.chargerMode", 5),
+            lighting_color=dig(data, "status.lightingState.color", 5),
+            zone_connected=bool(dig(data, "zoneConnectionStatus.zoneState", False)),
+            zone_id=dig(data, "zoneConnectionStatus.safetydStatus.zoneId"),
+            y0_fw_major=dig(data, "status.safetyState.onRobotVersion.fwMajorVersion", 0),
+            y0_api_major=dig(data, "status.safetyState.onRobotVersion.apiMajorVersion", 0),
+            z0_fw_major=dig(data, "status.safetyState.z0Version.fwMajorVersion", 0),
+            z0_fw_minor=dig(data, "status.safetyState.z0Version.fwMinorVersion", 0),
+            z0_api_major=dig(data, "status.safetyState.z0Version.apiMajorVersion", 0),
+        )
+
+    @staticmethod
+    def _dig(obj, path, default=None):
+        """Walk a dotted attribute path safely, returning ``default`` if any hop is missing.
+
+        A robot can, for example, report zoneState=True while safetydStatus is missing the zoneId
+        field, so every hop is guarded rather than assumed.
+        """
+        for attr in path.split("."):
+            obj = getattr(obj, attr, None)
+            if obj is None:
+                return default
+        return obj
+
+
+#endregion

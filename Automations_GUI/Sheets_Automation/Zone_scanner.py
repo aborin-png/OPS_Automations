@@ -14,21 +14,20 @@ with these results, falling back to the hardcoded values in glossary.py if the s
 """
 #-----------------------------------------------------------------------------------------------------------------------------
 
-import re
-
 import glossary as Gloss
 
 #-----------------------------------------------------------------------------------------------------------------------------
 
-# 0-based column indexes in the STO sheet (A=0, B=1, ...).
-NAME_COL = 2  # C: Dock/Test Cell Name
-ZONE_1_0_COL = 4  # E: Zone IDs for 1.0
-ZONE_1_5_COL = 5  # F: Zone IDs for 1.5
+# All configuration constants live in glossary.py (single source of truth). These module-level
+# aliases keep the references below short and unchanged.
+NAME_COL = Gloss.NAME_COL  # C: Dock/Test Cell Name
+ZONE_1_0_COL = Gloss.ZONE_1_0_COL  # E: Zone IDs for 1.0
+ZONE_1_5_COL = Gloss.ZONE_1_5_COL  # F: Zone IDs for 1.5
 
-HEADER_ROWS = 2  # first two rows are headers
+HEADER_ROWS = Gloss.HEADER_ROWS  # first two rows are headers
 
 # Matches "Zone 203", "Zone 35", "Zone203", etc. and captures the number.
-ZONE_RE = re.compile(r'Zone\s*(\d+)', re.IGNORECASE)
+ZONE_RE = Gloss.ZONE_RE
 
 
 def _classify(name):

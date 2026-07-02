@@ -151,7 +151,7 @@ def get_robot_password(robot: str, field: str = "web.bd", on_auth_required=None)
     cached = _cache_get(robot, field)
     if cached is not None:
         return cached
-    
+
     api = API_Fetch(robot=robot, robot_offline=[])
     if api is None:
         raise Exception("API_Fetch returned None, robot may be offline or unreachable.")
@@ -169,4 +169,3 @@ def get_robot_password(robot: str, field: str = "web.bd", on_auth_required=None)
     else:
         logger.info("No valid Password was found in the Google Cookie Cache.")
     return password
-

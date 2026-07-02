@@ -10,6 +10,7 @@ classes.
 
 import datetime
 import json
+import re
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Optional
@@ -28,6 +29,28 @@ the google sheet doc.
 in data with)
 """
 GOOGLE_SHEET_RANGE = "A1:H14"
+
+#-----------------------------------------------------------------------------------------------------------------------------
+#region STO sheet parsing (Zone_scanner)
+'''
+Layout constants for parsing the STO global-truth sheet into the live zone tables. All consumed by
+Sheets_Automation/Zone_scanner.py (scan_zone_data). Update these if the sheet's column order or
+header layout changes.
+'''
+
+# 0-based index of the "Dock/Test Cell Name" column (C). Affects: Zone_scanner.py.
+NAME_COL = 2
+# 0-based index of the "Zone IDs for 1.0" column (E). Affects: Zone_scanner.py.
+ZONE_1_0_COL = 4
+# 0-based index of the "Zone IDs for 1.5" column (F). Affects: Zone_scanner.py.
+ZONE_1_5_COL = 5
+# Number of leading header rows to skip before data begins. Affects: Zone_scanner.py.
+HEADER_ROWS = 2
+# Regex that pulls the numeric zone id out of cells like "Zone 203 - TVG". Affects: Zone_scanner.py.
+ZONE_RE = re.compile(r'Zone\s*(\d+)', re.IGNORECASE)
+
+#endregion
+#-----------------------------------------------------------------------------------------------------------------------------
 """Zone # and the corresponding Dock/Cell name.
 
 These values are a hardcoded FALLBACK only. On startup the GUI scans the STO sheet above and
@@ -75,6 +98,34 @@ ZONE_TYPES = {
     for zone_id, name in ZONE_NAMES.items()
 }
 
+#-----------------------------------------------------------------------------------------------------------------------------
+#region Camera / video streaming
+'''
+Reolink NVR connection + RTSP stream settings used by UI_Handler.py (build_camera_url and the
+StreamViewer widget). Docks and cells stream from two SEPARATE NVRs, so each has its own IP and
+password; build_camera_url picks the pair based on the zone's type (see ZONE_TYPES).
+'''
+
+# NVR IP address for CELL cameras. Affects: UI_Handler.py (build_camera_url).
+CAMERA_IP_CELL = "10.224.131.2"
+# NVR IP address for DOCK cameras. Affects: UI_Handler.py (build_camera_url).
+CAMERA_IP_DOCK = "10.224.131.7"
+# Login username shared by both NVRs. Affects: UI_Handler.py (build_camera_url).
+CAMERA_USER = "admin"
+# Login password for the CELL NVR. Affects: UI_Handler.py (build_camera_url).
+CAMERA_PASSWORD_CELL = "admin1"
+# Login password for the DOCK NVR. Affects: UI_Handler.py (build_camera_url).
+CAMERA_PASSWORD_DOCK = "admin123"
+# RTSP stream quality: "sub" (640x360 @ 10fps) or "main" (4K @ 25fps).
+# Affects: UI_Handler.py (build_camera_url).
+CAMERA_PROFILE = "sub"
+# Fallback NVR channel used when a zone has no entry in CAMERA_CHANNELS.
+# Affects: UI_Handler.py (StreamViewer default arg and zone->channel lookup).
+CAMERA_DEFAULT_CHANNEL = 1
+# Pixel width/height the incoming video frames are displayed/resized to in the GUI.
+# Affects: UI_Handler.py (StreamViewer frame sizing).
+VIDEO_W, VIDEO_H = 640, 360
+
 CAMERA_CHANNELS = {  # robot Zone ID -> 1-based NVR channel number
     203: 1,
     106: 9,
@@ -110,6 +161,54 @@ ROBOT_BEHAVIORS = {
     "AFSE": "60005",
     "STOW": "40",
 }
+
+#endregion
+#-----------------------------------------------------------------------------------------------------------------------------
+#region UI appearance / layout
+'''
+Colors and layout constants for the CustomTkinter GUI, all consumed by UI_Handler.py. Colors given
+as a (light_mode, dark_mode) tuple are appearance-aware: a single fixed color (e.g. "gray20") does
+NOT adapt, so in light mode a dark panel would keep its dark background while CTk flips text to
+black -> unreadable. The tuples keep the UI readable in BOTH appearance modes.
+'''
+
+# Tab title -> accent color for the main notebook tabs. Affects: UI_Handler.py.
+TAB_COLORS = {
+    "Sheet Editor": "#5B9BD5",
+    "AFSE Monitoring": "#a244eb",
+}
+
+# Robot status code -> (color, label) shown on each robot card. Affects: UI_Handler.py.
+STATUS_COLORS = {
+    0: ("#CC3333", "FAULTED"),
+    1: ('#CC3333', 'E-STOPPED'),
+    2: ("#CCAA00", "IDLE"),
+    3: ("#2E8B3A", "ACTIVE"),
+    4: ('#3429ff', 'AUTONOMOUS READY'),
+    5: ('#3d3d3d', 'OFFLINE'),
+}
+
+# Battery charger mode code -> (color, label) shown on each robot card. Affects: UI_Handler.py.
+CHARGE_STATUS = {
+    0: ("#CC3333", 'NOT CHARGING'),
+    1: ('#308aff', 'SHORE POWER'),
+    2: ('#23cf51', 'MEANWELL CHARGER'),
+    3: ('#23cf51', 'ENATEL CHARGER'),
+    4: ('#ffeb12', 'INITIALIZING'),
+    5: ('#CC3333', 'OFFLINE'),
+}
+
+# Number of robot cards per row in the AFSE monitoring grid. Affects: UI_Handler.py.
+ROBOT_CARD_COLS = 4
+
+# (light_mode, dark_mode) color pairs (see note above). Affects: UI_Handler.py.
+PANEL_COLOR = ("gray85", "gray20")  # large background panels / scrollable areas
+CARD_COLOR = ("gray75", "gray30")  # robot cards / inner panels
+DIVIDER_COLOR = ("gray70", "gray40")  # thin separator lines
+SUBTLE_TEXT = ("gray35", "gray70")  # secondary / hint / label text
+
+#endregion
+#-----------------------------------------------------------------------------------------------------------------------------
 
 CONFIG_VERSION = "1.3.0"
 
@@ -222,31 +321,31 @@ class RobotInfo:
     property names below (see Sheets_Automation/Info_Parser.config_recontruction).
     """
     # --- description ---
-    nickname: str = ""                 # description.nickname
-    robot_serial: str = ""             # description.robotSerial  (shown on sheets)
-    serial: str = ""                   # description.serial       (robot password lookup)
+    nickname: str = ""  # description.nickname
+    robot_serial: str = ""  # description.robotSerial  (shown on sheets)
+    serial: str = ""  # description.serial       (robot password lookup)
 
     # --- release.releaseInfo ---
-    sw_version: str = ""               # release.releaseInfo.version
+    sw_version: str = ""  # release.releaseInfo.version
 
     # --- status.battery ---
-    battery_firmware: str = ""         # status.battery.bms1FirmwareVersion
-    soc: float = 0.0                   # status.battery.soc
-    charger_mode: int = 5              # status.battery.chargerMode    (5 == OFFLINE fallback)
+    battery_firmware: str = ""  # status.battery.bms1FirmwareVersion
+    soc: float = 0.0  # status.battery.soc
+    charger_mode: int = 5  # status.battery.chargerMode    (5 == OFFLINE fallback)
 
     # --- status.lightingState ---
-    lighting_color: int = 5            # status.lightingState.color    (5 == OFFLINE fallback)
+    lighting_color: int = 5  # status.lightingState.color    (5 == OFFLINE fallback)
 
     # --- zoneConnectionStatus ---
-    zone_connected: bool = False       # zoneConnectionStatus.zoneState
-    zone_id: Optional[int] = None      # zoneConnectionStatus.safetydStatus.zoneId
+    zone_connected: bool = False  # zoneConnectionStatus.zoneState
+    zone_id: Optional[int] = None  # zoneConnectionStatus.safetydStatus.zoneId
 
     # --- status.safetyState ---
-    y0_fw_major: int = 0               # status.safetyState.onRobotVersion.fwMajorVersion
-    y0_api_major: int = 0              # status.safetyState.onRobotVersion.apiMajorVersion
-    z0_fw_major: int = 0               # status.safetyState.z0Version.fwMajorVersion
-    z0_fw_minor: int = 0               # status.safetyState.z0Version.fwMinorVersion
-    z0_api_major: int = 0              # status.safetyState.z0Version.apiMajorVersion
+    y0_fw_major: int = 0  # status.safetyState.onRobotVersion.fwMajorVersion
+    y0_api_major: int = 0  # status.safetyState.onRobotVersion.apiMajorVersion
+    z0_fw_major: int = 0  # status.safetyState.z0Version.fwMajorVersion
+    z0_fw_minor: int = 0  # status.safetyState.z0Version.fwMinorVersion
+    z0_api_major: int = 0  # status.safetyState.z0Version.apiMajorVersion
 
     #---- Derived values (previously computed inline by the CONFIG_TEMPLATE eval strings) ----
 
@@ -288,7 +387,10 @@ class RobotInfo:
     @classmethod
     def from_api(cls, raw: str) -> "RobotInfo":
         """Parse a raw robot-info payload (the string returned by API_fetch.API_Fetch) into a
-        RobotInfo. This is the single source of truth for the API's nested field paths."""
+        RobotInfo.
+
+        This is the single source of truth for the API's nested field paths.
+        """
         data = json.loads(raw, object_hook=lambda d: SimpleNamespace(**d))
         dig = cls._dig
         return cls(

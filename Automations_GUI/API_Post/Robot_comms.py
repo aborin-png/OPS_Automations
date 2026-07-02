@@ -15,8 +15,10 @@ except ImportError:
 logger = logging.getLogger("OPS.robot_comms")
 
 RESPONSE_STATUS_CODES = {
-    "200": "OK - The request was successful and the server responded with the requested data.",
-    "400": "Bad Request - The server could not understand the request due to an invalid payload format",
+    "200":
+        "OK - The request was successful and the server responded with the requested data.",
+    "400":
+        "Bad Request - The server could not understand the request due to an invalid payload format",
 }
 
 

@@ -91,7 +91,6 @@ def open_log_folder():
     except Exception as e:
         logging.getLogger(LOGGER_NAME).exception("Failed to open log folder %s", path)
         _notify_error(f"Failed to open the log folder ({path}): {type(e).__name__}: {e}")
-        
 
 
 class _StreamTee:

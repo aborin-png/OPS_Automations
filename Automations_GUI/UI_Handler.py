@@ -11,6 +11,7 @@ import glossary
 import logger_setup
 from afse_monitoring import AfseMonitoringMixin
 from API_Post import robot_password
+from config_editing import ConfigEditor
 from dialogs import (
     AddRobotWindow,
     ConfigUpdateWindow,
@@ -113,6 +114,7 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
 
         self.build_afse_monitoring()
         self.build_Sheet_Editor()
+        self.build_config_editing()
 
         self.after(300, lambda: threading.Thread(target=self.update_from_git, daemon=True).start())
         self.after(500, self._check_config_version)
@@ -317,10 +319,6 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
 #----------------------------------------------------------------------------------------------------------------------------------------
 #region Sheets Editor
 
-#----------------------------------------------------------------------------------------------------------------------------------------
-
-#region Main Functions
-
     def build_Sheet_Editor(self):
         sheet_tab = self.tab_view.tab("Sheet Editor")
         options = list(self.config.get("Options", {}).keys())
@@ -413,17 +411,11 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
 
         self._new_sheet_name_var.trace_add("write", lambda *_: self._check_generate_ready())
 
-    #endregion
-
 #endregion
 #----------------------------------------------------------------------------------------------------------------------------------------
 ############################################################    AFSE MONITORING    ######################################################
 #----------------------------------------------------------------------------------------------------------------------------------------
 #region AFSE Monitoring
-
-#----------------------------------------------------------------------------------------------------------------------------------------
-
-#region Main Functions
 
     def build_afse_monitoring(self):
         afse_tab = self.tab_view.tab('AFSE Monitoring')
@@ -545,7 +537,19 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
         self._robot_detail_windows[name] = RobotDetailWindow(self, name, charge, color_code,
                                                              charge_code, zone_id=zone_id,
                                                              camera_channel=channel)
+#endregion
+#----------------------------------------------------------------------------------------------------------------------------------------
+############################################################    CONFIG EDITING    ######################################################
+#----------------------------------------------------------------------------------------------------------------------------------------
+#region Config Editing
 
+    def build_config_editing(self):
+        config_tab = self.tab_view.tab("Config Editing")
+        self.config_editor = ConfigEditor(config_tab, app=self)
+        self.config_editor.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+
+
+#endregion
 
 #endregion
 

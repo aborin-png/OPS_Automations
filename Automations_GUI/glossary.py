@@ -173,10 +173,7 @@ black -> unreadable. The tuples keep the UI readable in BOTH appearance modes.
 '''
 
 # Tab title -> accent color for the main notebook tabs. Affects: UI_Handler.py.
-TAB_COLORS = {
-    "Sheet Editor": "#5B9BD5",
-    "AFSE Monitoring": "#a244eb",
-}
+TAB_COLORS = {"Sheet Editor": "#5B9BD5", "AFSE Monitoring": "#a244eb", "Config Editing": "#1fdb74"}
 
 # Robot status code -> (color, label) shown on each robot card. Affects: UI_Handler.py.
 STATUS_COLORS = {

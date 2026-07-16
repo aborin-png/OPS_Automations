@@ -23,7 +23,10 @@ logger = logging.getLogger(logger_setup.LOGGER_NAME)
 
 
 class SheetEditorMixin:
-    """Sheet Editor tab logic. Mixed into App; relies on widgets built by build_Sheet_Editor."""
+    """Sheet Editor tab logic.
+
+    Mixed into App; relies on widgets built by build_Sheet_Editor.
+    """
 
     def get_config_option(self, test_name: str):
         self.selected_option = self.config.get('Options', {}).get(test_name, {})
@@ -74,6 +77,23 @@ class SheetEditorMixin:
 
         self.test_data = self.selected_option['Data']
         self._check_generate_ready()
+
+    def refresh_test_types(self):
+        """Re-sync the Test Type dropdown with config["Options"] after the Config Editing tab adds,
+        edits, or removes an option.
+
+        Always re-runs on_test_type_changed for the resulting selection so an *edit* to the
+        currently-selected type is reflected too; if the selected type was removed/renamed, falls
+        back to the first remaining option.
+        """
+        options = list(self.config.get("Options", {}).keys())
+        self._test_type_menu.configure(values=options)
+        current = self.test_type_var.get()
+        target = current if current in options else (options[0] if options else "")
+        if target != current:
+            self.test_type_var.set(target)
+        if target:
+            self.on_test_type_changed(target)
 
     def on_template_checked(self):
         if self._use_template_var.get():

@@ -1,6 +1,8 @@
 # Boston Dynamics, Inc. Confidential Information.
 # Copyright 2026. All Rights Reserved.
 import json
+import logging
+import os
 import pathlib as Path
 import sys
 import threading
@@ -285,13 +287,30 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
     def _do_pull(self, origin, win):
         try:
             origin.pull()
-            self.after(
-                0, lambda: win.msg_label.configure(
-                    text="Update complete. Please restart the application."))
+            self.after(0, lambda: self._finish_update(win))
         except Exception as e:
             self.after(
                 0,
                 lambda: win.msg_label.configure(text=f"Update failed: {e}", text_color="#CC3333"))
+
+    def _finish_update(self, win):
+        """Runs on the main thread after a successful pull: show the success message, then relaunch
+        shortly after so the user sees why the window is about to disappear."""
+        win.msg_label.configure(text="Update complete. Restarting the application...",
+                                text_color="#2E8B3A")
+        self.after(1500, self._restart_app)
+
+    @log_calls
+    def _restart_app(self):
+        """Replace this process with a fresh instance so the freshly pulled code takes effect."""
+        logger.info("Restarting OPS Automations GUI to apply update")
+        robot_password.clear_password_cache()
+        # os.execv does not run atexit handlers, so flush/close the log handlers explicitly.
+        logging.shutdown()
+        # A frozen build's sys.argv[0] is already the executable; a source run needs the interpreter
+        # prepended. os.execv replaces the current process image and never returns.
+        args = sys.argv if getattr(sys, 'frozen', False) else [sys.executable, *sys.argv]
+        os.execv(sys.executable, args)
 
     @log_calls
     def _check_config_version(self):
@@ -485,7 +504,11 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
             self.afse_frame.grid_columnconfigure(col, weight=1)
 
         self._render_afse_cards(self.afse_fetch_data())
-        self.afse_schedule_refresh()
+        # Defer the first refresh onto the event loop. afse_schedule_refresh spawns a worker thread
+        # that calls self.after() when it finishes; kicking it off directly here (during __init__,
+        # before mainloop) lets that thread hit .after() before the loop is running -> "main thread
+        # is not in main loop". Scheduling it means the worker only starts once the loop is live.
+        self.after(0, self.afse_schedule_refresh)
 
     def _render_afse_cards(self, robot_api):
         """(Re)build the AFSE card grid from scratch.

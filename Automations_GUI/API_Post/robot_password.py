@@ -19,7 +19,6 @@ import pathlib
 import re
 import sys
 import time
-import webbrowser
 
 logger = logging.getLogger("OPS.robot_password")
 
@@ -27,6 +26,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 import browser_cookie3
 import requests
+from browser_util import open_url
 from Sheets_Automation.API_fetch import API_Fetch
 from Sheets_Automation.Info_Parser import info_parser
 
@@ -183,7 +183,7 @@ def _prompt_authorize(serial: str, on_auth_required=None) -> str:
     logger.debug("Searching Chrome profiles: %s", profiles or "(none found!)")
     if on_auth_required is not None:
         on_auth_required()
-    webbrowser.open(url)
+    open_url(url)
 
     deadline = time.monotonic() + AUTH_TIMEOUT
     while time.monotonic() < deadline:

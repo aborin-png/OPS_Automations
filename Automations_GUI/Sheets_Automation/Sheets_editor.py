@@ -14,10 +14,10 @@ import logging
 import os
 import pathlib as Path
 import sys
-import webbrowser
 from tkinter import messagebox
 
 import glossary as Gloss
+from browser_util import open_url
 
 logger = logging.getLogger("OPS.sheets_editor")
 import gspread
@@ -161,7 +161,7 @@ def sheet_editor(auth, sheet, worksheet, config_data, option_name, robot, progre
         worksheet.update(updated_values, Gloss.GOOGLE_SHEET_RANGE)
 
         report(1.0, "Complete!")
-        webbrowser.open(worksheet.url)
+        open_url(worksheet.url)
         return worksheet
 
     except HttpError as err:

@@ -35,6 +35,9 @@ CAMERA_CHANNELS = glossary.CAMERA_CHANNELS  # robot Zone ID -> 1-based NVR chann
 
 ZONE_NAMES = glossary.ZONE_NAMES
 
+VERSION_NUMBER_MAJOR = 6
+VERSION_NUMBER_MINOR = 4
+
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 

@@ -8,18 +8,84 @@ checks, and the sheet-generation worker. The widgets themselves are built by
 ``App.build_Sheet_Editor`` in UI_Handler.py, which is why every method here operates on ``self``
 (the App instance) and its widget attributes.
 """
+import datetime
 import logging
 import threading
 
 import glossary
 import logger_setup
-from dialogs import ProgressWindow
+from API_Post import RETRO_Logging
+from dialogs import ProgressWindow, SheetLogWindow
+from gspread.utils import rowcol_to_a1
 from logger_setup import log_calls
 from Sheets_Automation import API_fetch, Sheets_editor
+
+# How many recently-created worksheets to keep in the RETRO history (persisted to the config).
+RETRO_HISTORY_LIMIT = 50
 
 SUBTLE_TEXT = glossary.SUBTLE_TEXT
 # Same configured "OPS" logger that UI_Handler set up via logger_setup.setup_logging().
 logger = logging.getLogger(logger_setup.LOGGER_NAME)
+
+
+# --------------------------------------------------------------------------------------------------
+# RETRO worksheet placement -- pure helpers (no widgets / no network), so they can be unit-tested.
+# --------------------------------------------------------------------------------------------------
+def _retro_header_columns(row: list) -> tuple | None:
+    """If `row` is the retro log's header row, return (time, issue, retro) 0-based column indexes.
+
+    Matched case-insensitively against the header titles (see the worksheet template): the timestamp
+    goes under "Time" (excluding "Time Resumed"), the message under "Issue Description", and the
+    "Retro" checkbox column is ticked. Returns None unless all three titles are present in the row.
+    """
+    time_col = issue_col = retro_col = None
+    for idx, cell in enumerate(row):
+        norm = str(cell).strip().lower()
+        if not norm:
+            continue
+        if time_col is None and norm.startswith("time") and "resume" not in norm:
+            time_col = idx
+        if issue_col is None and "issue description" in norm:
+            issue_col = idx
+        if retro_col is None and norm == "retro":
+            retro_col = idx
+    if None in (time_col, issue_col, retro_col):
+        return None
+    return time_col, issue_col, retro_col
+
+
+def _locate_retro_row(grid: list) -> tuple:
+    """Find where the next retro should be written in a worksheet grid (list of row lists).
+
+    Scans for the header row (the one carrying the Time / Issue Description / Retro titles), then
+    returns the first row after it whose Time *and* Issue Description cells are both blank (falling
+    back to the row just past the used range if every row is filled). Returns (row, time_col,
+    issue_col, retro_col), all 1-based for A1 addressing. Raises ValueError if the header row can't
+    be located.
+    """
+    header_idx = None
+    columns = None
+    for i, row in enumerate(grid):
+        cols = _retro_header_columns(row)
+        if cols is not None:
+            header_idx, columns = i, cols
+            break
+    if columns is None:
+        raise ValueError(
+            "Could not find the 'Time' / 'Issue Description' / 'Retro' header row in the worksheet."
+        )
+
+    time_col, issue_col, retro_col = columns
+
+    def _empty(row, col):
+        return not (str(row[col]).strip() if col < len(row) else "")
+
+    target = len(grid)  # default: append on the row just past the used range
+    for i in range(header_idx + 1, len(grid)):
+        if _empty(grid[i], time_col) and _empty(grid[i], issue_col):
+            target = i
+            break
+    return target + 1, time_col + 1, issue_col + 1, retro_col + 1
 
 
 class SheetEditorMixin:
@@ -193,9 +259,13 @@ class SheetEditorMixin:
                     sheet = self.authentication.open(title=sheet_title)
 
                 logger.info("Generating sheet '%s' for %s", self.sheet_name, self.robot_selection)
-                Sheets_editor.sheet_editor(self.authentication, sheet, self.worksheet_selection,
-                                           self.test_data, self.sheet_name, self.robot_selection,
-                                           progress_cb=report)
+                created_ws = Sheets_editor.sheet_editor(self.authentication, sheet,
+                                                        self.worksheet_selection, self.test_data,
+                                                        self.sheet_name, self.robot_selection,
+                                                        progress_cb=report)
+                if created_ws is not None:
+                    entry = self._build_retro_entry(sheet, created_ws, self.robot_selection)
+                    self.after(0, lambda e=entry: self.record_created_worksheet(e))
                 completed[0] = True
             except Exception:
                 logger.exception("Sheet generation failed")
@@ -209,3 +279,191 @@ class SheetEditorMixin:
                 self.after(0, _finish)
 
         threading.Thread(target=run, daemon=True).start()
+
+    # ----------------------------------------------------------------------------------------------
+    # RETRO logging
+    # ----------------------------------------------------------------------------------------------
+    def _retro_history(self) -> list:
+        """The persisted list of recently created worksheets (created lazily in the config)."""
+        return self.config.setdefault("RetroWorksheets", [])
+
+    @staticmethod
+    def _build_retro_entry(sheet, worksheet, robot) -> dict:
+        """Identifying info for a created worksheet -- enough to reopen it and target its robot.
+
+        Built from cached gspread attributes (no network), so it's safe to call from a worker.
+        """
+        return {
+            "spreadsheet_key": sheet.id,
+            "spreadsheet_title": sheet.title,
+            "worksheet_id": worksheet.id,
+            "worksheet_title": worksheet.title,
+            "robot": robot,
+            "url": worksheet.url,
+            "created_at": datetime.datetime.now().isoformat(timespec="seconds"),
+        }
+
+    def record_created_worksheet(self, entry: dict):
+        """Append a created worksheet to the RETRO history, persist it, and refresh the controls.
+
+        Runs on the main thread (scheduled from the generate worker). De-dupes by spreadsheet +
+        worksheet id, so re-recording the same tab just moves it to the most-recent slot.
+        """
+        history = self._retro_history()
+        history[:] = [
+            e for e in history
+            if (e.get("spreadsheet_key"), e.get("worksheet_id")) != (entry["spreadsheet_key"],
+                                                                     entry["worksheet_id"])
+        ]
+        history.append(entry)
+        del history[:-RETRO_HISTORY_LIMIT]  # keep only the most-recent RETRO_HISTORY_LIMIT entries
+        self.save_config()
+        self.refresh_retro_controls()
+        logger.info("Recorded created worksheet %r for the RETRO history.",
+                    entry["worksheet_title"])
+
+    def _retro_label(self, entry: dict) -> str:
+        return f'{entry["worksheet_title"]}  ·  {entry["robot"]}'
+
+    def refresh_retro_controls(self):
+        """Rebuild the dropdown labels from the history and refresh the target label + button.
+
+        Called after a Generate (new worksheet recorded) and once at build time.
+        """
+        history = self._retro_history()
+        self._retro_label_to_entry = {}
+        labels = []
+        for entry in history:
+            label = self._retro_label(entry)
+            base, i = label, 2
+            while label in self._retro_label_to_entry:  # keep dropdown labels unique
+                label = f"{base} ({i})"
+                i += 1
+            self._retro_label_to_entry[label] = entry
+            labels.append(label)
+
+        self._retro_ws_menu.configure(values=labels or ["(no created worksheets yet)"])
+        if self._retro_ws_var.get() not in self._retro_label_to_entry:
+            self._retro_ws_var.set(labels[-1] if labels else "(no created worksheets yet)")
+        self._update_retro_target_label()
+        self._update_retro_button()
+
+    def _resolve_retro_target(self):
+        """The history entry the RETRO will act on, or None if nothing is targetable yet."""
+        history = self._retro_history()
+        if not history:
+            return None
+        if self._retro_source_var.get() == "Specific":
+            return self._retro_label_to_entry.get(self._retro_ws_var.get())
+        return history[-1]  # "Latest created worksheet"
+
+    def _update_retro_target_label(self):
+        entry = self._resolve_retro_target()
+        if entry is None:
+            self._retro_target_label.configure(
+                text="No created worksheets yet — generate a sheet first.", text_color=SUBTLE_TEXT)
+        else:
+            self._retro_target_label.configure(
+                text=f'→ {entry["robot"]}  ·  {entry["worksheet_title"]}', text_color=SUBTLE_TEXT)
+
+    def _update_retro_button(self):
+        state = "normal" if self._resolve_retro_target() is not None else "disabled"
+        self._retro_btn.configure(state=state)
+        self._comment_btn.configure(state=state)
+
+    def on_retro_source_changed(self, mode: str):
+        if mode == "Specific":
+            self._retro_ws_menu.grid()
+        else:
+            self._retro_ws_menu.grid_remove()
+        self._update_retro_target_label()
+        self._update_retro_button()
+
+    def on_retro_worksheet_selected(self, _: str):
+        self._update_retro_target_label()
+        self._update_retro_button()
+
+    @log_calls
+    def open_retro_window(self):
+        self._open_log_window("retro")
+
+    @log_calls
+    def open_comment_window(self):
+        self._open_log_window("comment")
+
+    def _open_log_window(self, kind: str):
+        """Open the message prompt for a RETRO or a plain comment.
+
+        Both target the currently selected worksheet; the difference is handled in ``_send_log``
+        (only a retro POSTs to the robot and ticks the Retro checkbox).
+        """
+        entry = self._resolve_retro_target()
+        if entry is None:
+            return
+        target = f'{entry["robot"]}  ·  {entry["worksheet_title"]}'
+        if kind == "retro":
+            title, heading, placeholder = "RETRO", "Log a RETRO", "Message (blank = 'Retro N')"
+        else:
+            title, heading, placeholder = "Comment", "Add a Comment", "Comment (blank = 'Comment N')"
+        SheetLogWindow(self, target_label=target, title=title, heading=heading,
+                       placeholder=placeholder,
+                       on_submit=lambda win, text: self._send_log(entry, text, win, kind))
+
+    def _send_log(self, entry: dict, message_text: str, win, kind: str):
+        """Resolve the message (blank -> sequential ``Retro N`` / ``Comment N`` default), then write
+        it to the worksheet in a worker thread, driving the window with the result.
+
+        A retro also POSTs the retro-log to the robot and ticks the Retro checkbox; a comment does
+        neither -- it only logs the time + message.
+        """
+        # Time-only (like the sheet's Ctrl+Shift+: entry); USER_ENTERED lets Sheets store it as a
+        # time value and the column's own format controls how it displays.
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        label = "RETRO" if kind == "retro" else "Comment"
+        if message_text:
+            message = message_text
+        elif kind == "retro":
+            self._retro_default_count += 1
+            message = f"Retro {self._retro_default_count}"
+        else:
+            self._comment_default_count += 1
+            message = f"Comment {self._comment_default_count}"
+
+        def worker():
+            try:
+                if kind == "retro":
+                    RETRO_Logging.take_retro_log_with_comment(f'{entry["robot"]}.stretch', message)
+                worksheet = self._open_retro_worksheet(entry)
+                row, time_col, issue_col, retro_col = _locate_retro_row(worksheet.get_all_values())
+                updates = [
+                    {
+                        "range": rowcol_to_a1(row, time_col),
+                        "values": [[timestamp]]
+                    },
+                    {
+                        "range": rowcol_to_a1(row, issue_col),
+                        "values": [[message]]
+                    },
+                ]
+                if kind == "retro":
+                    updates.append({"range": rowcol_to_a1(row, retro_col), "values": [[True]]})
+                worksheet.batch_update(updates, value_input_option="USER_ENTERED")
+                logger.info("%s %r logged to %r row %d.", label, message, entry["worksheet_title"],
+                            row)
+                self.after(0, lambda: win.finish_success(f"{label} logged: {message}"))
+            except Exception as e:  # noqa: BLE001 -- surfaced to the user in the window
+                logger.exception("%s failed", label)
+                self.after(0, lambda err=e: win.finish_failure(f"{label} failed: {err}"))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _open_retro_worksheet(self, entry: dict):
+        """Reopen the stored worksheet by key + id, falling back to an id scan / title lookup."""
+        spreadsheet = self.authentication.open_by_key(entry["spreadsheet_key"])
+        try:
+            return spreadsheet.get_worksheet_by_id(entry["worksheet_id"])
+        except Exception:  # noqa: BLE001 -- older tabs / API quirks: fall back to scan + title
+            for worksheet in spreadsheet.worksheets():
+                if worksheet.id == entry["worksheet_id"]:
+                    return worksheet
+            return spreadsheet.worksheet(entry["worksheet_title"])

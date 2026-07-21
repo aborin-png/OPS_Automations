@@ -450,3 +450,77 @@ class RemoveRobotWindow(ctk.CTkToplevel):
     def _safe_destroy(self):
         if self.winfo_exists():
             self.destroy()
+
+
+class SheetLogWindow(ctk.CTkToplevel):
+    """Prompt for a message to log to the sheet -- a RETRO or a plain comment.
+
+    The user types a message and presses Enter / Submit; leaving it blank lets the caller assign a
+    sequential default (``Retro N`` / ``Comment N``). ``on_submit(window, message_text)`` is invoked
+    with the raw (possibly empty) text and this window, so the caller can run the send in a worker
+    thread and drive ``finish_success`` / ``finish_failure`` back on the main thread. Title, heading
+    and placeholder are supplied by the caller so the one window serves both features.
+    """
+
+    def __init__(self, parent, target_label, on_submit, *, title="RETRO", heading="Log a RETRO",
+                 placeholder="Message (blank = 'Retro N')"):
+        super().__init__(parent)
+        self.title(title)
+        self.geometry("460x260")
+        self.resizable(False, False)
+        self.transient(parent)
+        self._on_submit = on_submit
+        self._working = False
+
+        ctk.CTkLabel(self, text=heading, font=ctk.CTkFont(size=16,
+                                                          weight="bold")).pack(pady=(20, 4))
+        ctk.CTkLabel(self, text=target_label, text_color=SUBTLE_TEXT, wraplength=420,
+                     justify="center").pack(pady=(0, 10))
+
+        self._entry_var = ctk.StringVar()
+        self._entry = ctk.CTkEntry(self, textvariable=self._entry_var, width=360,
+                                   placeholder_text=placeholder)
+        self._entry.pack(pady=(0, 8))
+        self._entry.bind("<Return>", lambda _e: self._submit())
+
+        self._status = ctk.CTkLabel(self, text="", text_color=SUBTLE_TEXT, wraplength=420,
+                                    justify="center")
+        self._status.pack(pady=(0, 8))
+
+        btns = ctk.CTkFrame(self, fg_color="transparent")
+        btns.pack(pady=(0, 12))
+        self._submit_btn = ctk.CTkButton(btns, text="Submit", width=110, command=self._submit)
+        self._submit_btn.pack(side="left", padx=6)
+        ctk.CTkButton(btns, text="Cancel", width=110, fg_color="gray40",
+                      command=self.destroy).pack(side="left", padx=6)
+
+        self.wait_visibility()
+        self.grab_set()
+        self._entry.focus()
+
+    def _submit(self):
+        if self._working:
+            return
+        self._working = True
+        self._submit_btn.configure(state="disabled")
+        self._entry.configure(state="disabled")
+        self._status.configure(text="Sending retro...", text_color=SUBTLE_TEXT)
+        self._on_submit(self, self._entry_var.get().strip())
+
+    def finish_success(self, message):
+        if not self.winfo_exists():
+            return
+        self._status.configure(text=message, text_color="#2E8B3A")
+        self.after(1500, self._safe_destroy)
+
+    def finish_failure(self, message):
+        if not self.winfo_exists():
+            return
+        self._working = False
+        self._submit_btn.configure(state="normal")
+        self._entry.configure(state="normal")
+        self._status.configure(text=message, text_color="#CC3333")
+
+    def _safe_destroy(self):
+        if self.winfo_exists():
+            self.destroy()

@@ -411,6 +411,53 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
 
         self._new_sheet_name_var.trace_add("write", lambda *_: self._check_generate_ready())
 
+        self.build_retro_controls(sheet_tab)
+
+    def build_retro_controls(self, sheet_tab):
+        """RETRO section under the Sheet Editor: pick a created worksheet (latest by default, or a
+        specific one from history) and fire a retro-log at the robot that worksheet was made for.
+
+        Behaviour lives in SheetEditorMixin (refresh_retro_controls / on_retro_* / open_retro_window).
+        """
+        # Sequential numbers for blank ("Retro N" / "Comment N") messages this session.
+        self._retro_default_count = 0
+        self._comment_default_count = 0
+
+        self.retro_frame = ctk.CTkFrame(sheet_tab, fg_color=PANEL_COLOR)
+        self.retro_frame.pack(fill="x", padx=12, pady=(0, 12))
+
+        ctk.CTkLabel(self.retro_frame, text="RETRO", font=ctk.CTkFont(size=14, weight="bold")).grid(
+            row=0, column=0, columnspan=4, padx=12, pady=(12, 4), sticky="w")
+
+        ctk.CTkLabel(self.retro_frame, text="Worksheet:").grid(row=1, column=0, padx=(12, 8),
+                                                               pady=(0, 8), sticky="w")
+        self._retro_source_var = ctk.StringVar(value="Latest")
+        ctk.CTkSegmentedButton(self.retro_frame, values=["Latest", "Specific"],
+                               variable=self._retro_source_var,
+                               command=self.on_retro_source_changed).grid(
+                                   row=1, column=1, padx=(0, 8), pady=(0, 8), sticky="w")
+
+        self._retro_ws_var = ctk.StringVar()
+        self._retro_ws_menu = ctk.CTkOptionMenu(self.retro_frame, values=[""],
+                                                variable=self._retro_ws_var,
+                                                command=self.on_retro_worksheet_selected, width=300)
+        self._retro_ws_menu.grid(row=1, column=2, padx=(0, 12), pady=(0, 8), sticky="w")
+        self._retro_ws_menu.grid_remove()  # only shown in "Specific" mode
+
+        self._retro_target_label = ctk.CTkLabel(self.retro_frame, text="", text_color=SUBTLE_TEXT)
+        self._retro_target_label.grid(row=2, column=0, columnspan=4, padx=12, pady=(0, 8),
+                                      sticky="w")
+
+        self._retro_btn = ctk.CTkButton(self.retro_frame, text="RETRO", state="disabled",
+                                        command=self.open_retro_window)
+        self._retro_btn.grid(row=3, column=1, padx=(0, 12), pady=(0, 12), sticky="w")
+
+        self._comment_btn = ctk.CTkButton(self.retro_frame, text="Comment", state="disabled",
+                                          fg_color="gray40", command=self.open_comment_window)
+        self._comment_btn.grid(row=3, column=2, padx=(0, 12), pady=(0, 12), sticky="w")
+
+        self.refresh_retro_controls()
+
 #endregion
 #----------------------------------------------------------------------------------------------------------------------------------------
 ############################################################    AFSE MONITORING    ######################################################

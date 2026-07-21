@@ -129,6 +129,9 @@ def sheet_editor(auth, sheet, worksheet, config_data, option_name, robot, progre
     which sheets/worksheets to use. After the user is polled, it runs all relevant functions to
     acquire data from SWI, link it to the desired data, and then write the new information back to
     the desired  google sheet.
+
+    Returns the newly created (duplicated) worksheet on success, or None if the run was aborted /
+    failed (so callers can record it, e.g. for the RETRO history).
     """
 
     def report(value, message):
@@ -159,9 +162,11 @@ def sheet_editor(auth, sheet, worksheet, config_data, option_name, robot, progre
 
         report(1.0, "Complete!")
         webbrowser.open(worksheet.url)
+        return worksheet
 
     except HttpError as err:
         logger.error("Google API error during sheet edit: %s", err)
+        return None
 
 
 # main()

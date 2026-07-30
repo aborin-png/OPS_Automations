@@ -207,7 +207,7 @@ SUBTLE_TEXT = ("gray35", "gray70")  # secondary / hint / label text
 #endregion
 #-----------------------------------------------------------------------------------------------------------------------------
 
-CONFIG_VERSION = "1.3.0"
+CONFIG_VERSION = "1.3.1"
 
 CONFIG_TEMPLATE = {
     "Version": CONFIG_VERSION,
@@ -279,8 +279,9 @@ CONFIG_TEMPLATE = {
     "AFSE": {
         "Robots": ["sb20", "sb12", "sb24", "sb13", "sb16", "sb25", "sb17", "sb18"]
     },
-    "UI": {
-        "Scaling": 1.0
+    "Settings": {
+        "Scaling": 1.0,
+        "Fullscreen": 0
     }
 }
 """This is the class structure that the data extracted from SWI follows, Additional functions can be

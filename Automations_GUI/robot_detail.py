@@ -14,8 +14,8 @@ import customtkinter as ctk
 import cv2
 import glossary
 import logger_setup
-from API_Post import Robot_comms, robot_password
-from dialogs import AuthWaitWindow
+from API_Post import Robot_comms, password_store, robot_password
+from dialogs import PasswordUnlockWindow
 from logger_setup import log_calls
 from PIL import Image, ImageTk
 
@@ -59,8 +59,8 @@ class RobotDetailWindow(ctk.CTkToplevel):
     Shows the robot's live camera feed (RTSP from the zone's Reolink NVR, streamed on a background
     thread) alongside charge, status, and zone readouts that are refreshed in place via
     `update_data`. Also provides action buttons (Restart AFSE, Stow Robot, Reboot Robot) that
-    retrieve the robot password and issue the command through Robot_comms, surfacing an
-    AuthWaitWindow if browser authorization is required.
+    retrieve the robot password from the encrypted store and issue the command through Robot_comms,
+    surfacing a PasswordUnlockWindow if the store isn't unlocked yet this session.
     """
 
     def __init__(self, parent, robot_name, charge, color_code, charge_code, zone_id=None,
@@ -177,32 +177,48 @@ class RobotDetailWindow(ctk.CTkToplevel):
 
     @log_calls
     def _run_robot_action(self, action_name, action_func):
-        # Holds the AuthWaitWindow, which is created lazily and ONLY if browser
-        # authorization turns out to be required for the robot password.
-        auth_win = {"window": None}
+        # Holds the PasswordUnlockWindow, created lazily and ONLY if the password store isn't already
+        # unlocked this session. Once shown it also serves as this action's status window.
+        unlock_win = {"window": None}
 
-        def on_auth_required():
+        def unlock(blob):
+            """Called on the worker thread when the store must be unlocked.
+
+            Shows the key prompt on the main thread and blocks here until the user submits a working
+            key (returns the decrypted store) or cancels (returns None).
+            """
+            resolved = threading.Event()
+            result = {"store": None}
 
             def create():
-                if self.winfo_exists():
-                    auth_win["window"] = AuthWaitWindow(self, self._robot_name, action_name)
+                if not self.winfo_exists():
+                    resolved.set()
+                    return
+                unlock_win["window"] = PasswordUnlockWindow(
+                    self,
+                    self._robot_name,
+                    action_name,
+                    validate=lambda key: password_store.decrypt_store(blob, key),
+                    on_resolved=lambda store: (result.update(store=store), resolved.set()),
+                )
 
             self.after(0, create)
+            resolved.wait()
+            return result["store"]
 
         def finish_success():
-            win = auth_win["window"]
+            win = unlock_win["window"]
             if win is not None and win.winfo_exists():
                 win.show_success(f"{action_name} sent to {self._robot_name}.")
 
         def finish_failure(message):
-            win = auth_win["window"]
+            win = unlock_win["window"]
             if win is not None and win.winfo_exists():
                 win.show_failure(message)
 
         def worker():
             try:
-                password = robot_password.get_robot_password(self._robot_name,
-                                                             on_auth_required=on_auth_required)
+                password = robot_password.get_robot_password(self._robot_name, unlock=unlock)
                 if not password:
                     logger.warning("%s: could not retrieve password for %s", action_name,
                                    self._robot_name)
@@ -212,8 +228,7 @@ class RobotDetailWindow(ctk.CTkToplevel):
                 self.after(0, finish_success)
             except Exception:
                 logger.exception("Robot action '%s' failed for %s", action_name, self._robot_name)
-                self.after(0,
-                           lambda: finish_failure("Authorization timed out or the command failed."))
+                self.after(0, lambda: finish_failure("The command failed."))
 
         threading.Thread(target=worker, daemon=True).start()
 

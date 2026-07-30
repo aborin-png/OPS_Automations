@@ -4,10 +4,12 @@ import json
 import logging
 import os
 import pathlib as Path
+import shutil
 import sys
 import threading
 from tkinter import messagebox
 
+import config_migrate
 import customtkinter as ctk
 import glossary
 import logger_setup
@@ -96,21 +98,29 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
         # Surface a crash/error window when an uncaught exception is logged anywhere.
         logger_setup.register_error_handler(self._on_logged_error)
 
+        self.config = self.load_config()
+        self.fullscreen = self.config.get("Settings", {}).get("Fullscreen", 0)
+        if self.fullscreen:
+            self.attributes("-fullscreen", True)
+        else:
+            self.attributes("-fullscreen", False)
+            self.geometry("1000x700")
+
+        # Apply the per-machine UI scaling before any widgets are built. CTk auto-detects DPI,
+        # which is unreliable on Linux/HiDPI, so this lets each machine be tuned in Settings.
+        self.ui_scaling = float(self.config.get("Settings", {}).get("Scaling", 1.0))
+        self._apply_ui_scaling(self.ui_scaling)
+
         self.title("OPS Automations")
-        self.geometry("900x600")
-        self.minsize(700, 450)
+
+        self.minsize(750, 500)
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=0)
         self.grid_rowconfigure(0, weight=1)
 
         logger.info("Starting OPS Automations GUI")
-        self.config = self.load_config()
 
-        # Apply the per-machine UI scaling before any widgets are built. CTk auto-detects DPI,
-        # which is unreliable on Linux/HiDPI, so this lets each machine be tuned in Settings.
-        self.ui_scaling = float(self.config.get("UI", {}).get("Scaling", 1.0))
-        self._apply_ui_scaling(self.ui_scaling)
         self.authentication = Sheets_editor.authenticator()
         self.load_zone_data()
 
@@ -191,6 +201,13 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
             width=130,
         ).pack(padx=12, pady=4, anchor="n")
 
+        ctk.CTkLabel(self.sidebar,
+                     text=f"Version {VERSION_NUMBER_MAJOR}.{VERSION_NUMBER_MINOR}").pack(
+                         padx=12, pady=4, anchor="s")
+
+        ctk.CTkButton(self.sidebar, text="Close",
+                      command=self._on_app_close).pack(padx=12, pady=4, anchor="s")
+
 #endregion
 
 #----------------------------------------------------------------------------------------------------------------------------------------
@@ -221,9 +238,22 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
         """Apply a new UI scaling factor live and persist it to Automation_GUI_Config.json."""
         self.ui_scaling = factor
         self._apply_ui_scaling(factor)
-        self.config.setdefault("UI", {})["Scaling"] = factor
+        self.config.setdefault("Settings", {})["Scaling"] = factor
         self.save_config()
         logger.info("UI scaling set to %.0f%%", factor * 100)
+
+    def set_fullscreen_setting(self, setting):
+        """Apply the new fullscreen setting by changing the size of the GUI to the size of the
+        screen and perists to Automation_GUI_Config.json."""
+        if setting:
+            self.attributes("-fullscreen", True)
+        else:
+            self.attributes("-fullscreen", False)
+            self.geometry("1000x700")
+
+        self.config.setdefault("Settings", {})["Fullscreen"] = setting
+        self.save_config()
+        logger.info(f"Fullscreen setting set to {setting}")
 
     @log_calls
     def load_zone_data(self):
@@ -326,11 +356,25 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
     def _do_config_update(self, win):
         win.keep_btn.grid_remove()
         win.update_btn.grid_remove()
-        with open(CONFIG_PATH, 'w') as f:
-            json.dump(glossary.CONFIG_TEMPLATE, f, indent=4)
-        self.config = self.load_config()
-        win.msg_label.configure(text="Config updated. The application will close soon.",
-                                text_color="#2E8B3A")
+        old_version = self.config.get("Version")
+        try:
+            # Back up the current config first so a bad merge is always recoverable.
+            backup = config_migrate.backup_path(CONFIG_PATH, old_version)
+            shutil.copyfile(CONFIG_PATH, backup)
+            # Merge new template defaults in while keeping the user's customizations (user-wins).
+            merged = config_migrate.merge_config(glossary.CONFIG_TEMPLATE, self.config)
+            with open(CONFIG_PATH, 'w') as f:
+                json.dump(merged, f, indent=4)
+            self.config = self.load_config()
+            logger.info("Config merged %s -> %s (backup: %s).", old_version, merged.get("Version"),
+                        backup.name)
+        except Exception as e:
+            logger.exception("Config merge failed")
+            win.msg_label.configure(text=f"Config update failed: {e}", text_color="#CC3333")
+            return
+        win.msg_label.configure(
+            text="Config updated — your customizations were kept. The application will close soon.",
+            text_color="#2E8B3A")
 
         win.after(1500, win.destroy)
         self.destroy()
@@ -459,12 +503,41 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
                                command=self.on_retro_source_changed).grid(
                                    row=1, column=1, padx=(0, 8), pady=(0, 8), sticky="w")
 
-        self._retro_ws_var = ctk.StringVar()
-        self._retro_ws_menu = ctk.CTkOptionMenu(self.retro_frame, values=[""],
-                                                variable=self._retro_ws_var,
-                                                command=self.on_retro_worksheet_selected, width=300)
-        self._retro_ws_menu.grid(row=1, column=2, padx=(0, 12), pady=(0, 8), sticky="w")
-        self._retro_ws_menu.grid_remove()  # only shown in "Specific" mode
+        # "Specific" source: type a sheet title, load its tabs, then pick one. The whole sub-frame
+        # is shown/hidden together and is only visible in "Specific" mode.
+        self._retro_loaded_sheet = None  # cached {key, title, tabs:{title->{id,url}}} after a load
+        self._retro_specific_frame = ctk.CTkFrame(self.retro_frame, fg_color="transparent")
+        self._retro_specific_frame.grid(row=1, column=2, columnspan=3, padx=(0, 12), pady=(0, 8),
+                                        sticky="w")
+
+        self._retro_sheet_entry_label = ctk.CTkLabel(self._retro_specific_frame,
+                                                     text="Sheet Title: ",
+                                                     font=ctk.CTkFont(size=11),
+                                                     text_color=SUBTLE_TEXT)
+        self._retro_sheet_entry_label.grid(row=0, column=0, padx=(0, 8), sticky="w")
+
+        self._retro_sheet_var = ctk.StringVar()
+        self._retro_sheet_entry = ctk.CTkEntry(self._retro_specific_frame,
+                                               textvariable=self._retro_sheet_var,
+                                               placeholder_text="Sheet title", width=220)
+        self._retro_sheet_entry.grid(row=0, column=1, padx=(0, 8), sticky="w")
+        self._retro_sheet_entry.bind("<Return>", lambda _e: self.load_retro_sheet())
+
+        self._retro_load_btn = ctk.CTkButton(self._retro_specific_frame, text="Load Tabs", width=90,
+                                             command=self.load_retro_sheet)
+        self._retro_load_btn.grid(row=0, column=2, sticky="w")
+
+        self._retro_tab_var = ctk.StringVar(value="(load a sheet)")
+        self._retro_tab_menu = ctk.CTkOptionMenu(self._retro_specific_frame, values=[
+            "(load a sheet)"
+        ], variable=self._retro_tab_var, command=self.on_retro_tab_selected, width=300)
+        self._retro_tab_menu.grid(row=1, column=0, columnspan=2, pady=(6, 0), sticky="w")
+
+        self._retro_load_status = ctk.CTkLabel(self._retro_specific_frame, text="",
+                                               text_color=SUBTLE_TEXT, font=ctk.CTkFont(size=11))
+        self._retro_load_status.grid(row=2, column=0, columnspan=2, pady=(2, 0), sticky="w")
+
+        self._retro_specific_frame.grid_remove()  # only shown in "Specific" mode
 
         self._retro_target_label = ctk.CTkLabel(self.retro_frame, text="", text_color=SUBTLE_TEXT)
         self._retro_target_label.grid(row=2, column=0, columnspan=4, padx=12, pady=(0, 8),

@@ -13,6 +13,7 @@ import logging
 import threading
 
 import glossary
+import gspread
 import logger_setup
 from API_Post import RETRO_Logging
 from dialogs import ProgressWindow, SheetLogWindow
@@ -27,65 +28,9 @@ SUBTLE_TEXT = glossary.SUBTLE_TEXT
 # Same configured "OPS" logger that UI_Handler set up via logger_setup.setup_logging().
 logger = logging.getLogger(logger_setup.LOGGER_NAME)
 
-
-# --------------------------------------------------------------------------------------------------
-# RETRO worksheet placement -- pure helpers (no widgets / no network), so they can be unit-tested.
-# --------------------------------------------------------------------------------------------------
-def _retro_header_columns(row: list) -> tuple | None:
-    """If `row` is the retro log's header row, return (time, issue, retro) 0-based column indexes.
-
-    Matched case-insensitively against the header titles (see the worksheet template): the timestamp
-    goes under "Time" (excluding "Time Resumed"), the message under "Issue Description", and the
-    "Retro" checkbox column is ticked. Returns None unless all three titles are present in the row.
-    """
-    time_col = issue_col = retro_col = None
-    for idx, cell in enumerate(row):
-        norm = str(cell).strip().lower()
-        if not norm:
-            continue
-        if time_col is None and norm.startswith("time") and "resume" not in norm:
-            time_col = idx
-        if issue_col is None and "issue description" in norm:
-            issue_col = idx
-        if retro_col is None and norm == "retro":
-            retro_col = idx
-    if None in (time_col, issue_col, retro_col):
-        return None
-    return time_col, issue_col, retro_col
-
-
-def _locate_retro_row(grid: list) -> tuple:
-    """Find where the next retro should be written in a worksheet grid (list of row lists).
-
-    Scans for the header row (the one carrying the Time / Issue Description / Retro titles), then
-    returns the first row after it whose Time *and* Issue Description cells are both blank (falling
-    back to the row just past the used range if every row is filled). Returns (row, time_col,
-    issue_col, retro_col), all 1-based for A1 addressing. Raises ValueError if the header row can't
-    be located.
-    """
-    header_idx = None
-    columns = None
-    for i, row in enumerate(grid):
-        cols = _retro_header_columns(row)
-        if cols is not None:
-            header_idx, columns = i, cols
-            break
-    if columns is None:
-        raise ValueError(
-            "Could not find the 'Time' / 'Issue Description' / 'Retro' header row in the worksheet."
-        )
-
-    time_col, issue_col, retro_col = columns
-
-    def _empty(row, col):
-        return not (str(row[col]).strip() if col < len(row) else "")
-
-    target = len(grid)  # default: append on the row just past the used range
-    for i in range(header_idx + 1, len(grid)):
-        if _empty(grid[i], time_col) and _empty(grid[i], issue_col):
-            target = i
-            break
-    return target + 1, time_col + 1, issue_col + 1, retro_col + 1
+# ----------------------------------------------------------------------------------------------
+#region Sheet Editor Mixin
+# ----------------------------------------------------------------------------------------------
 
 
 class SheetEditorMixin:
@@ -223,6 +168,9 @@ class SheetEditorMixin:
             self.robot_selection = nickname
             self._robot_status_label.configure(text="✓ Robot is Online", text_color="#2E8B3A")
         self._check_generate_ready()
+        # A "Specific" RETRO takes its robot from this field, so re-evaluate its target + buttons.
+        self._update_retro_target_label()
+        self._update_retro_button()
 
     def _check_generate_ready(self):
         robot_ok = bool(getattr(self, 'robot_selection', None))
@@ -281,8 +229,65 @@ class SheetEditorMixin:
         threading.Thread(target=run, daemon=True).start()
 
     # ----------------------------------------------------------------------------------------------
-    # RETRO logging
+    #region RETRO logging
     # ----------------------------------------------------------------------------------------------
+    @log_calls
+    def load_retro_sheet(self):
+        """Open the sheet named in the RETRO 'Sheet title' box and populate the tab dropdown with
+        its worksheets (used by the 'Specific' worksheet source).
+
+        Runs the network open in a worker thread so the UI stays responsive.
+        """
+        title = self._retro_sheet_var.get().strip()
+        if not title:
+            self._retro_load_status.configure(text="Enter a sheet title first.",
+                                              text_color="#CC3333")
+            return
+        self._retro_load_btn.configure(state="disabled")
+        self._retro_load_status.configure(text="Loading tabs...", text_color=SUBTLE_TEXT)
+        threading.Thread(target=self._retro_load_worker, args=(title,), daemon=True).start()
+
+    def _retro_load_worker(self, title):
+        try:
+            sheet = self.authentication.open(title=title)
+            tabs = [(ws.title, ws.id, ws.url) for ws in sheet.worksheets()]
+            loaded = {
+                "key": sheet.id,
+                "title": sheet.title,
+                "tabs": {
+                    t: {
+                        "id": wid,
+                        "url": url
+                    } for t, wid, url in tabs
+                },
+            }
+            titles = [t for t, _, _ in tabs]
+            self.after(0, lambda: self._retro_load_done(loaded, titles))
+        except gspread.exceptions.SpreadsheetNotFound:
+            self.after(0, lambda: self._retro_load_failed(f"No sheet titled '{title}' found."))
+        except Exception as e:  # noqa: BLE001 -- surfaced to the user below
+            logger.exception("Failed to load RETRO worksheet tabs")
+            self.after(0, lambda err=e: self._retro_load_failed(f"Could not load tabs: {err}"))
+
+    def _retro_load_done(self, loaded, titles):
+        self._retro_loaded_sheet = loaded
+        self._retro_load_btn.configure(state="normal")
+        self._retro_tab_menu.configure(values=titles or ["(no tabs)"])
+        self._retro_tab_var.set(titles[0] if titles else "(no tabs)")
+        self._retro_load_status.configure(
+            text=f"Loaded {len(titles)} tab(s) from '{loaded['title']}'.", text_color="#2E8B3A")
+        self._update_retro_target_label()
+        self._update_retro_button()
+
+    def _retro_load_failed(self, message):
+        self._retro_loaded_sheet = None
+        self._retro_load_btn.configure(state="normal")
+        self._retro_tab_menu.configure(values=["(load a sheet)"])
+        self._retro_tab_var.set("(load a sheet)")
+        self._retro_load_status.configure(text=message, text_color="#CC3333")
+        self._update_retro_target_label()
+        self._update_retro_button()
+
     def _retro_history(self) -> list:
         """The persisted list of recently created worksheets (created lazily in the config)."""
         return self.config.setdefault("RetroWorksheets", [])
@@ -322,64 +327,73 @@ class SheetEditorMixin:
         logger.info("Recorded created worksheet %r for the RETRO history.",
                     entry["worksheet_title"])
 
-    def _retro_label(self, entry: dict) -> str:
-        return f'{entry["worksheet_title"]}  ·  {entry["robot"]}'
-
     def refresh_retro_controls(self):
-        """Rebuild the dropdown labels from the history and refresh the target label + button.
+        """Refresh the target label + buttons.
 
-        Called after a Generate (new worksheet recorded) and once at build time.
+        Called after a Generate (a new worksheet is recorded, which "Latest" points at) and once at
+        build time. "Specific" is driven separately by load_retro_sheet / the tab dropdown.
         """
-        history = self._retro_history()
-        self._retro_label_to_entry = {}
-        labels = []
-        for entry in history:
-            label = self._retro_label(entry)
-            base, i = label, 2
-            while label in self._retro_label_to_entry:  # keep dropdown labels unique
-                label = f"{base} ({i})"
-                i += 1
-            self._retro_label_to_entry[label] = entry
-            labels.append(label)
-
-        self._retro_ws_menu.configure(values=labels or ["(no created worksheets yet)"])
-        if self._retro_ws_var.get() not in self._retro_label_to_entry:
-            self._retro_ws_var.set(labels[-1] if labels else "(no created worksheets yet)")
         self._update_retro_target_label()
         self._update_retro_button()
 
     def _resolve_retro_target(self):
-        """The history entry the RETRO will act on, or None if nothing is targetable yet."""
-        history = self._retro_history()
-        if not history:
-            return None
+        """The worksheet the RETRO / Comment will act on, or None if nothing is targetable yet.
+
+        "Latest" uses the most recently generated worksheet from the history (which carries the
+        robot it was generated for). "Specific" uses the tab chosen from a manually loaded sheet,
+        taking the robot from the Sheet Editor's Robot field, since a manually picked sheet has no
+        generation history to supply one.
+        """
         if self._retro_source_var.get() == "Specific":
-            return self._retro_label_to_entry.get(self._retro_ws_var.get())
-        return history[-1]  # "Latest created worksheet"
+            loaded = self._retro_loaded_sheet
+            if not loaded:
+                return None
+            info = loaded["tabs"].get(self._retro_tab_var.get())
+            if info is None:
+                return None
+            return {
+                "spreadsheet_key": loaded["key"],
+                "spreadsheet_title": loaded["title"],
+                "worksheet_id": info["id"],
+                "worksheet_title": self._retro_tab_var.get(),
+                "robot": getattr(self, "robot_selection", None),
+                "url": info["url"],
+            }
+        history = self._retro_history()
+        return history[-1] if history else None
 
     def _update_retro_target_label(self):
         entry = self._resolve_retro_target()
         if entry is None:
-            self._retro_target_label.configure(
-                text="No created worksheets yet — generate a sheet first.", text_color=SUBTLE_TEXT)
+            if self._retro_source_var.get() == "Specific":
+                msg = "Load a sheet and choose a tab."
+            else:
+                msg = "No created worksheets yet — generate a sheet first."
+            self._retro_target_label.configure(text=msg, text_color=SUBTLE_TEXT)
         else:
-            self._retro_target_label.configure(
-                text=f'→ {entry["robot"]}  ·  {entry["worksheet_title"]}', text_color=SUBTLE_TEXT)
+            robot = entry.get("robot") or "enter a robot above"
+            self._retro_target_label.configure(text=f'→ {robot}  ·  {entry["worksheet_title"]}',
+                                               text_color=SUBTLE_TEXT)
 
     def _update_retro_button(self):
-        state = "normal" if self._resolve_retro_target() is not None else "disabled"
-        self._retro_btn.configure(state=state)
-        self._comment_btn.configure(state=state)
+        entry = self._resolve_retro_target()
+        targetable = entry is not None
+        has_robot = bool(entry and entry.get("robot"))
+        # A comment only writes to the sheet, so it just needs a target; a RETRO also POSTs to the
+        # robot, so it additionally needs one (always present for "Latest"; from the Robot field for
+        # "Specific").
+        self._comment_btn.configure(state="normal" if targetable else "disabled")
+        self._retro_btn.configure(state="normal" if (targetable and has_robot) else "disabled")
 
     def on_retro_source_changed(self, mode: str):
         if mode == "Specific":
-            self._retro_ws_menu.grid()
+            self._retro_specific_frame.grid()
         else:
-            self._retro_ws_menu.grid_remove()
+            self._retro_specific_frame.grid_remove()
         self._update_retro_target_label()
         self._update_retro_button()
 
-    def on_retro_worksheet_selected(self, _: str):
+    def on_retro_tab_selected(self, _: str):
         self._update_retro_target_label()
         self._update_retro_button()
 
@@ -400,7 +414,7 @@ class SheetEditorMixin:
         entry = self._resolve_retro_target()
         if entry is None:
             return
-        target = f'{entry["robot"]}  ·  {entry["worksheet_title"]}'
+        target = f'{entry.get("robot") or "—"}  ·  {entry["worksheet_title"]}'
         if kind == "retro":
             title, heading, placeholder = "RETRO", "Log a RETRO", "Message (blank = 'Retro N')"
         else:
@@ -467,3 +481,69 @@ class SheetEditorMixin:
                 if worksheet.id == entry["worksheet_id"]:
                     return worksheet
             return spreadsheet.worksheet(entry["worksheet_title"])
+
+
+#endregion
+
+
+# --------------------------------------------------------------------------------------------------
+#region RETRO placement
+# --------------------------------------------------------------------------------------------------
+def _retro_header_columns(row: list) -> tuple | None:
+    """If `row` is the retro log's header row, return (time, issue, retro) 0-based column indexes.
+
+    Matched case-insensitively against the header titles (see the worksheet template): the timestamp
+    goes under "Time" (excluding "Time Resumed"), the message under "Issue Description", and the
+    "Retro" checkbox column is ticked. Returns None unless all three titles are present in the row.
+    """
+    time_col = issue_col = retro_col = None
+    for idx, cell in enumerate(row):
+        norm = str(cell).strip().lower()
+        if not norm:
+            continue
+        if time_col is None and norm.startswith("time") and "resume" not in norm:
+            time_col = idx
+        if issue_col is None and "issue description" in norm:
+            issue_col = idx
+        if retro_col is None and norm == "retro":
+            retro_col = idx
+    if None in (time_col, issue_col, retro_col):
+        return None
+    return time_col, issue_col, retro_col
+
+
+def _locate_retro_row(grid: list) -> tuple:
+    """Find where the next retro should be written in a worksheet grid (list of row lists).
+
+    Scans for the header row (the one carrying the Time / Issue Description / Retro titles), then
+    returns the first row after it whose Time *and* Issue Description cells are both blank (falling
+    back to the row just past the used range if every row is filled). Returns (row, time_col,
+    issue_col, retro_col), all 1-based for A1 addressing. Raises ValueError if the header row can't
+    be located.
+    """
+    header_idx = None
+    columns = None
+    for i, row in enumerate(grid):
+        cols = _retro_header_columns(row)
+        if cols is not None:
+            header_idx, columns = i, cols
+            break
+    if columns is None:
+        raise ValueError(
+            "Could not find the 'Time' / 'Issue Description' / 'Retro' header row in the worksheet."
+        )
+
+    time_col, issue_col, retro_col = columns
+
+    def _empty(row, col):
+        return not (str(row[col]).strip() if col < len(row) else "")
+
+    target = len(grid)  # default: append on the row just past the used range
+    for i in range(header_idx + 1, len(grid)):
+        if _empty(grid[i], time_col) and _empty(grid[i], issue_col):
+            target = i
+            break
+    return target + 1, time_col + 1, issue_col + 1, retro_col + 1
+
+
+#endregion

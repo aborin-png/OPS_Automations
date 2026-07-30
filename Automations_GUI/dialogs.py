@@ -30,8 +30,8 @@ class SettingsWindow(ctk.CTkToplevel):
         super().__init__(parent)
         self._app = parent
         self.title("Settings")
-        self.geometry("400x300")
-        self.resizable(False, False)
+        self.geometry("400x400")
+        self.resizable(False, True)
 
         ctk.CTkLabel(self, text="Settings", font=ctk.CTkFont(size=20,
                                                              weight="bold")).pack(pady=(20, 12))
@@ -64,6 +64,12 @@ class SettingsWindow(ctk.CTkToplevel):
             width=160,
         ).pack(pady=(0, 4))
 
+        ctk.CTkLabel(self, text="Fullscreen Mode", text_color=SUBTLE_TEXT).pack(pady=(4, 2))
+        self._fullscreen_var = ctk.IntVar(value=self._app.fullscreen)
+        ctk.CTkCheckBox(self, text="Fullscreen", variable=self._fullscreen_var,
+                        command=self._fullscreen_mode_changed, onvalue=1,
+                        offvalue=0).pack(pady=(0, 4))
+
         ctk.CTkButton(self, text="Close", command=self.destroy).pack(pady=(8, 20))
 
         self.wait_visibility()
@@ -75,6 +81,9 @@ class SettingsWindow(ctk.CTkToplevel):
 
     def _appearance_mode_changed(self, choice):
         ctk.set_appearance_mode(choice)
+
+    def _fullscreen_mode_changed(self):
+        self._app.set_fullscreen_setting(self._fullscreen_var.get())
 
 
 class UpdateWindow(ctk.CTkToplevel):
@@ -142,8 +151,9 @@ class ConfigUpdateWindow(ctk.CTkToplevel):
     """Prompt shown when the user's Automation_GUI_Config.json version does not match the required
     CONFIG_VERSION.
 
-    Warns that updating overwrites their Automation_GUI_Config.json (losing any custom edits) and offers to
-    regenerate it from the template (`on_update`) or keep the current one.
+    Explains that updating merges new template defaults into their config while keeping their
+    customizations (a backup is saved first), and offers to run the merge (`on_update`) or keep the
+    current config as-is.
     """
 
     def __init__(self, parent, current_version, required_version, on_update):
@@ -160,13 +170,13 @@ class ConfigUpdateWindow(ctk.CTkToplevel):
                      text=f"Your version: {ver_current}     Required version: {required_version}",
                      text_color=SUBTLE_TEXT).pack(pady=(0, 12))
 
-        warning_frame = ctk.CTkFrame(self, fg_color="#3d2000", corner_radius=6)
-        warning_frame.pack(fill="x", padx=20, pady=(0, 12))
+        info_frame = ctk.CTkFrame(self, fg_color="#12331d", corner_radius=6)
+        info_frame.pack(fill="x", padx=20, pady=(0, 12))
         ctk.CTkLabel(
-            warning_frame,
-            text=
-            "⚠  Updating will overwrite your Automation_GUI_Config.json.\nBack up any custom changes before continuing.",
-            text_color="#ffcc44",
+            info_frame,
+            text="Updating merges new defaults into your config while keeping your\n"
+            "customizations (Options, robots, settings). A backup is saved first.",
+            text_color="#7fdca0",
             justify="center",
         ).pack(pady=10, padx=12)
 
@@ -240,42 +250,113 @@ class ErrorWindow(ctk.CTkToplevel):
         self.focus()
 
 
-class AuthWaitWindow(ctk.CTkToplevel):
-    """Small status window shown only when robot-password retrieval needs the user to authorize in
-    their browser.
+class PasswordUnlockWindow(ctk.CTkToplevel):
+    """Prompts for the shared key to unlock the robot-password store, then doubles as the status
+    window for the robot action that triggered it.
 
-    Starts on a "waiting for authorization" spinner and is flipped to a green checkmark once the
-    password is retrieved and the command is sent.
+    Shown only when the store isn't already unlocked this session (mirrors how the old browser-auth
+    window appeared only when an extra step was needed). Two phases:
+
+      1. **Key entry** -- a masked field. On submit ``validate(key)`` runs (it decrypts the store and
+         returns it, or raises with a user-facing message); a wrong/malformed key shows an inline
+         error and the field stays open to try again. ``on_resolved`` is called exactly once -- with
+         the decrypted store on success, or ``None`` if the user cancels -- which is how the waiting
+         worker thread is released.
+      2. **Action status** -- after a successful unlock the window switches to a "sending..." state
+         and the caller drives ``show_success`` / ``show_failure`` for the action itself.
     """
 
-    def __init__(self, parent, robot_name, action_name):
+    def __init__(self, parent, robot_name, action_name, validate, on_resolved):
         super().__init__(parent)
-        self.title("Authorization Required")
-        self.geometry("440x240")
+        self.title("Unlock Robot Passwords")
+        self.geometry("470x300")
         self.resizable(False, False)
         self.transient(parent)
+        self._validate = validate
+        self._on_resolved = on_resolved
+        self._resolved = False
 
         ctk.CTkLabel(self, text=f"{action_name} — {robot_name}",
-                     font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(20, 8))
-
-        self._icon = ctk.CTkLabel(self, text="⏳", font=ctk.CTkFont(size=40))
-        self._icon.pack(pady=(4, 8))
+                     font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(20, 4))
 
         self._msg = ctk.CTkLabel(
             self,
-            text="A browser window was opened.\nPlease click AUTHORIZE to continue.",
+            text="Enter the shared key to unlock robot passwords for this session.",
             text_color=SUBTLE_TEXT,
+            wraplength=430,
             justify="center",
         )
-        self._msg.pack(pady=(0, 12))
+        self._msg.pack(pady=(0, 10))
 
+        self._entry_var = ctk.StringVar()
+        self._entry = ctk.CTkEntry(self, textvariable=self._entry_var, width=390, show="•",
+                                   placeholder_text="AGE-SECRET-KEY-...")
+        self._entry.pack(pady=(0, 8))
+        self._entry.bind("<Return>", lambda _e: self._submit())
+
+        self._status = ctk.CTkLabel(self, text="", text_color=SUBTLE_TEXT, wraplength=430,
+                                    justify="center")
+        self._status.pack(pady=(0, 8))
+
+        # Phase-2/3 widgets, created now but packed only when we reach those phases.
         self._bar = ctk.CTkProgressBar(self, width=320, mode="indeterminate")
-        self._bar.pack(pady=(0, 16), padx=20)
+        self._icon = ctk.CTkLabel(self, text="", font=ctk.CTkFont(size=36))
+        self._close_btn = ctk.CTkButton(self, text="Close", fg_color="gray40",
+                                        command=self._safe_destroy)
+
+        self._btns = ctk.CTkFrame(self, fg_color="transparent")
+        self._btns.pack(pady=(0, 12))
+        self._submit_btn = ctk.CTkButton(self._btns, text="Unlock", width=110, command=self._submit)
+        self._submit_btn.pack(side="left", padx=6)
+        ctk.CTkButton(self._btns, text="Cancel", width=110, fg_color="gray40",
+                      command=self._cancel).pack(side="left", padx=6)
+
+        self.protocol("WM_DELETE_WINDOW", self._cancel)
+        self.wait_visibility()
+        self.grab_set()
+        self._entry.focus()
+
+    def _resolve(self, result):
+        """Release the waiting worker with ``result`` (the store, or None).
+
+        Fires at most once.
+        """
+        if self._resolved:
+            return
+        self._resolved = True
+        self._on_resolved(result)
+
+    def _submit(self):
+        key = self._entry_var.get().strip()
+        if not key:
+            self._status.configure(text="Please paste the shared key.", text_color="#CC3333")
+            return
+        self._submit_btn.configure(state="disabled")
+        self._entry.configure(state="disabled")
+        self._status.configure(text="Unlocking...", text_color=SUBTLE_TEXT)
+        self.update_idletasks()
+        try:
+            store = self._validate(key)
+        except Exception as e:  # noqa: BLE001 -- PasswordStoreError et al.; message is user-facing
+            self._submit_btn.configure(state="normal")
+            self._entry.configure(state="normal")
+            self._status.configure(text=str(e), text_color="#CC3333")
+            self._entry.focus()
+            return
+        self._resolve(store)
+        self._enter_working_phase()
+
+    def _cancel(self):
+        self._resolve(None)
+        self._safe_destroy()
+
+    def _enter_working_phase(self):
+        self._entry.pack_forget()
+        self._btns.pack_forget()
+        self._msg.configure(text="Passwords unlocked. Sending command...", text_color=SUBTLE_TEXT)
+        self._status.configure(text="")
+        self._bar.pack(pady=(4, 14), padx=20)
         self._bar.start()
-
-        self._close_btn = ctk.CTkButton(self, text="Close", command=self.destroy, fg_color="gray40")
-
-        self.protocol("WM_DELETE_WINDOW", self.destroy)
 
     def show_success(self, message):
         if not self.winfo_exists():
@@ -283,8 +364,9 @@ class AuthWaitWindow(ctk.CTkToplevel):
         self._bar.stop()
         self._bar.pack_forget()
         self._icon.configure(text="✓", text_color="#2E8B3A")
+        self._icon.pack(pady=(4, 8))
         self._msg.configure(text=message, text_color="#2E8B3A")
-        self._close_btn.pack(pady=(0, 16))
+        self._close_btn.pack(pady=(0, 14))
         self.after(4000, self._safe_destroy)
 
     def show_failure(self, message):
@@ -293,8 +375,9 @@ class AuthWaitWindow(ctk.CTkToplevel):
         self._bar.stop()
         self._bar.pack_forget()
         self._icon.configure(text="✕", text_color="#CC3333")
+        self._icon.pack(pady=(4, 8))
         self._msg.configure(text=message, text_color="#CC3333")
-        self._close_btn.pack(pady=(0, 16))
+        self._close_btn.pack(pady=(0, 14))
 
     def _safe_destroy(self):
         if self.winfo_exists():

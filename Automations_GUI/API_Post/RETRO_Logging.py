@@ -9,7 +9,6 @@ message. Both endpoints are ``skipAuth`` on SWI, so no robot password is require
 Importable from the GUI (the CLI block only runs when executed directly).
 """
 import logging
-import sys
 
 import requests
 

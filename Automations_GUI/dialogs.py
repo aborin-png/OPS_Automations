@@ -546,7 +546,7 @@ class SheetLogWindow(ctk.CTkToplevel):
     """
 
     def __init__(self, parent, target_label, on_submit, *, title="RETRO", heading="Log a RETRO",
-                 placeholder="Message (blank = 'Retro N')"):
+                 placeholder="Message (blank = 'Retro N')", kind):
         super().__init__(parent)
         self.title(title)
         self.geometry("460x260")
@@ -554,6 +554,7 @@ class SheetLogWindow(ctk.CTkToplevel):
         self.transient(parent)
         self._on_submit = on_submit
         self._working = False
+        self.kind = kind
 
         ctk.CTkLabel(self, text=heading, font=ctk.CTkFont(size=16,
                                                           weight="bold")).pack(pady=(20, 4))
@@ -587,7 +588,10 @@ class SheetLogWindow(ctk.CTkToplevel):
         self._working = True
         self._submit_btn.configure(state="disabled")
         self._entry.configure(state="disabled")
-        self._status.configure(text="Sending retro...", text_color=SUBTLE_TEXT)
+        if self.kind == "retro":
+            self._status.configure(text="Sending retro...", text_color=SUBTLE_TEXT)
+        else:
+            self._status.configure(text="Sending Comment...", text_color=SUBTLE_TEXT)
         self._on_submit(self, self._entry_var.get().strip())
 
     def finish_success(self, message):

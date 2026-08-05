@@ -12,3 +12,6 @@ secrets/identity*
 secrets/*.plain.json
 secrets/*.plaintext
 secrets/*decrypted*
+
+# Temporary one-off bootstrap that re-introduces cookie scraping to seed the store; delete after use.
+password_collector.py

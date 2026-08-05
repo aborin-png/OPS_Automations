@@ -11,9 +11,7 @@ info.
 #region Includes
 
 import logging
-import os
 import pathlib as Path
-import sys
 from tkinter import messagebox
 
 import glossary as Gloss
@@ -21,7 +19,6 @@ from browser_util import open_url
 
 logger = logging.getLogger("OPS.sheets_editor")
 import gspread
-from git import Repo
 from googleapiclient.errors import HttpError
 from Sheets_Automation import Info_Parser
 

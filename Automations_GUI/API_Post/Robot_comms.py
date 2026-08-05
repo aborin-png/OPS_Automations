@@ -2,15 +2,9 @@
 # Copyright 2026. All Rights Reserved.
 import json
 import logging
-import sys
 
 import requests
 from glossary import ROBOT_BEHAVIORS
-
-try:
-    from API_Post import robot_password
-except ImportError:
-    import Automations_GUI.API_Post.robot_password as robot_password
 
 logger = logging.getLogger("OPS.robot_comms")
 
@@ -125,28 +119,6 @@ def stow_robot(robot: str, password: str) -> None:
         raise
 
 
-def stop_behavior(robot: str, password: str) -> None:
-    """Stops the currently active behavior via POST /api/behaviors/stop.
-
-    Args:
-        robot (str): The address or hostname of the robot.
-        password (str): The password for the robot.
-    """
-    url = f"https://{robot}.stretch/api/behaviors/stop"
-    auth_token = get_auth_token(robot, password)
-    headers = {"Authorization": f"Bearer {auth_token}", "Content-Type": "application/json"}
-    try:
-        response = requests.post(url, headers=headers, verify=False, timeout=10)
-        response.raise_for_status()
-        logger.info(status_code_meaning(response.status_code))
-    except requests.HTTPError as e:
-        logger.error("Behavior stop failed: %s %s", e.response.status_code, e.response.text)
-        raise
-    except requests.RequestException as e:
-        logger.error("Behavior stop request error: %s", e)
-        raise
-
-
 #-------------------------------------------------------------------------------------------------------------------
 
 #region Auxiliary Functions
@@ -175,59 +147,6 @@ def get_auth_token(robot, password):
         raise
     except ValueError as e:
         logger.error("Login response error: %s", e)
-        raise
-
-
-def get_behavior_list(robot, password):
-    """Retrieves the list of available behaviors for the specified robot in the form of a behavior
-    id list.
-
-    Args:
-        robot (str): The address or hostname of the robot.
-        password (str): The password for the robot.
-
-    Returns:
-        list: A list of available behaviors.
-    """
-    url = f"https://{robot}.stretch/api/behaviors/list"
-    auth_token = get_auth_token(robot, password)
-    headers = {"Authorization": f"Bearer {auth_token}"}
-    try:
-        response = requests.get(url, headers=headers, verify=False, timeout=10)
-        response.raise_for_status()
-        behaviors = response.json().get("behaviors", [])
-        logger.info("Available behaviors: %s", behaviors)
-
-        with open(f"{robot}_behaviors.txt", "w") as f:
-            for behavior in behaviors:
-                f.write(f"{behavior}\n")
-        logger.info("Behavior list saved to %s_behaviors.txt", robot)
-    except requests.RequestException as e:
-        logger.error("Get behavior list request failed: %s", e)
-        raise
-
-
-def get_previously_active_behavior(robot, password):
-    """Retrieves the status of the previously active behavior for the specified robot.
-
-    Args:
-        robot (str): The address or hostname of the robot.
-        password (str): The password for the robot.
-
-    Returns:
-        dict: The status of the previously active behavior.
-    """
-    url = f"https://{robot}.stretch/api/behaviors/getLastBehaviorStatus"
-    auth_token = get_auth_token(robot, password)
-    headers = {"Authorization": f"Bearer {auth_token}"}
-    try:
-        response = requests.get(url, headers=headers, verify=False, timeout=10)
-        response.raise_for_status()
-        active_behavior = response.json()
-        logger.info("Previously active behavior: %s", json.dumps(active_behavior, indent=4))
-        return active_behavior
-    except requests.RequestException as e:
-        logger.error("Get active behavior request failed: %s", e)
         raise
 
 

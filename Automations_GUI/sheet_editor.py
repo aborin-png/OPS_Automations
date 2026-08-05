@@ -421,7 +421,8 @@ class SheetEditorMixin:
             title, heading, placeholder = "Comment", "Add a Comment", "Comment (blank = 'Comment N')"
         SheetLogWindow(self, target_label=target, title=title, heading=heading,
                        placeholder=placeholder,
-                       on_submit=lambda win, text: self._send_log(entry, text, win, kind))
+                       on_submit=lambda win, text: self._send_log(entry, text, win, kind),
+                       kind=kind)
 
     def _send_log(self, entry: dict, message_text: str, win, kind: str):
         """Resolve the message (blank -> sequential ``Retro N`` / ``Comment N`` default), then write

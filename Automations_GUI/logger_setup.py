@@ -43,16 +43,6 @@ _log_path = None
 _error_handlers = []
 
 
-def get_log_dir():
-    """Folder the current run's logs are written to (or None before setup_logging)."""
-    return _log_dir
-
-
-def get_log_path():
-    """Path of the current run's log file (or None before setup_logging)."""
-    return _log_path
-
-
 def register_error_handler(callback):
     """Register `callback(message)` to be called when an uncaught exception is logged."""
     _error_handlers.append(callback)

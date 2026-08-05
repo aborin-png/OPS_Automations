@@ -8,10 +8,7 @@ extracting and linking the info we want to the locations on google sheet.
 """
 #-----------------------------------------------------------------------------------------------------------------------------
 
-import datetime
 import json
-import os
-import pprint
 from functools import reduce
 from types import SimpleNamespace
 
@@ -29,12 +26,6 @@ def info_parser(string_data):
     documented attributes off the returned object.
     """
     return Gloss.RobotInfo.from_api(string_data)
-
-
-def get_config(config_path):
-    with open(config_path, 'r') as file:
-        file = file.read()
-        return json.loads(file, object_hook=lambda d: SimpleNamespace(**d))
 
 
 def config_recontruction(data_map, robot_data):

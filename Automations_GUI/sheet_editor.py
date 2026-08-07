@@ -15,11 +15,10 @@ import threading
 import glossary
 import gspread
 import logger_setup
-from API_Post import RETRO_Logging
 from dialogs import ProgressWindow, SheetLogWindow
 from gspread.utils import rowcol_to_a1
 from logger_setup import log_calls
-from Sheets_Automation import API_fetch, Sheets_editor
+from Sheets_Automation import API_fetch, RETRO_Logging, Sheets_editor
 
 # How many recently-created worksheets to keep in the RETRO history (persisted to the config).
 RETRO_HISTORY_LIMIT = 50

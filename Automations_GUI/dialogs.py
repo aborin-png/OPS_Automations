@@ -6,15 +6,20 @@ These are the self-contained ``CTkToplevel`` dialogs the main App opens. Each ta
 (and any callbacks) as arguments and does not reach into App internals, so they live here separately
 from UI_Handler.py. See UI_Handler.py for the App that instantiates them.
 """
+import logging
 import threading
 
 import customtkinter as ctk
 import glossary
 import logger_setup
+from add_favorite import is_pinned, remove_from_favorites, save_to_favorites
+from browser_util import open_url
 from Sheets_Automation import API_fetch
 
 # UI color alias (defined in glossary.py, single source of truth). See UI_Handler.py.
 SUBTLE_TEXT = glossary.SUBTLE_TEXT
+
+logger = logging.getLogger(logger_setup.LOGGER_NAME)
 
 
 class SettingsWindow(ctk.CTkToplevel):
@@ -84,6 +89,94 @@ class SettingsWindow(ctk.CTkToplevel):
 
     def _fullscreen_mode_changed(self):
         self._app.set_fullscreen_setting(self._fullscreen_var.get())
+
+
+class FavoritesWindow(ctk.CTkToplevel):
+    """Pin / unpin the OPS Automations app to the GNOME dock.
+
+    "Add to Dock" writes a ``~/.local/share/applications/automation-gui.desktop`` launcher and adds it
+    to the GNOME ``favorite-apps`` list; "Remove from Dock" removes both (see add_favorite.py). Those
+    calls shell out to ``gsettings`` and are GNOME-specific, so any failure (e.g. a non-GNOME desktop)
+    is caught and shown in the status line rather than crashing the app. The buttons reflect the
+    current pin state.
+    """
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self._app = parent
+        self.title("Favorites Settings")
+        self.geometry("420x300")
+        self.resizable(False, False)
+        self.transient(parent)
+
+        ctk.CTkLabel(self, text="Favorites Settings",
+                     font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 6))
+        ctk.CTkLabel(
+            self,
+            text="Pin OPS Automations to your GNOME dock for quick launching.\n"
+            "This adds a desktop launcher and a dock shortcut.",
+            text_color=SUBTLE_TEXT,
+            justify="center",
+        ).pack(pady=(0, 16))
+
+        btns = ctk.CTkFrame(self, fg_color="transparent")
+        btns.pack(pady=(0, 8))
+        self._add_btn = ctk.CTkButton(btns, text="Add to Dock", width=140,
+                                      command=self._add_favorites)
+        self._add_btn.pack(side="left", padx=6)
+        self._remove_btn = ctk.CTkButton(btns, text="Remove from Dock", width=140,
+                                         fg_color="gray40", command=self._remove_favorites)
+        self._remove_btn.pack(side="left", padx=6)
+
+        self._status = ctk.CTkLabel(self, text="", text_color=SUBTLE_TEXT, wraplength=380,
+                                    justify="center")
+        self._status.pack(pady=(10, 12))
+
+        ctk.CTkButton(self, text="Close", command=self.destroy).pack(pady=(4, 16))
+
+        self._reflect_state()  # initial button/status state from the live dock config
+        self.wait_visibility()
+        self.grab_set()
+
+    def _reflect_state(self, message=None, color=SUBTLE_TEXT):
+        """Sync the buttons to the live pin state, and show ``message`` (or a default state
+        line)."""
+        try:
+            pinned = is_pinned()
+        except Exception:  # noqa: BLE001 -- gsettings unavailable / non-GNOME desktop
+            logger.exception("Could not read GNOME dock favorites state.")
+            self._add_btn.configure(state="normal")
+            self._remove_btn.configure(state="normal")
+            self._status.configure(text=message or "Could not read the current dock state.",
+                                   text_color=color)
+            return
+        self._add_btn.configure(state="disabled" if pinned else "normal")
+        self._remove_btn.configure(state="normal" if pinned else "disabled")
+        if message is None:
+            message = ("OPS Automations is pinned to your dock."
+                       if pinned else "OPS Automations is not pinned to your dock.")
+            color = "#2E8B3A" if pinned else SUBTLE_TEXT
+        self._status.configure(text=message, text_color=color)
+
+    def _add_favorites(self):
+        try:
+            save_to_favorites()
+        except Exception as e:  # noqa: BLE001 -- subprocess/gsettings failure; surface to the user
+            logger.exception("Failed to pin the app to the dock.")
+            self._status.configure(text=f"Couldn't add to dock: {e}", text_color="#CC3333")
+            return
+        logger.info("Pinned OPS Automations to the GNOME dock.")
+        self._reflect_state("Added OPS Automations to your dock.", "#2E8B3A")
+
+    def _remove_favorites(self):
+        try:
+            remove_from_favorites()
+        except Exception as e:  # noqa: BLE001 -- subprocess/gsettings failure; surface to the user
+            logger.exception("Failed to remove the app from the dock.")
+            self._status.configure(text=f"Couldn't remove from dock: {e}", text_color="#CC3333")
+            return
+        logger.info("Removed OPS Automations from the GNOME dock.")
+        self._reflect_state("Removed OPS Automations from your dock.", SUBTLE_TEXT)
 
 
 class UpdateWindow(ctk.CTkToplevel):
@@ -250,7 +343,51 @@ class ErrorWindow(ctk.CTkToplevel):
         self.focus()
 
 
-class PasswordUnlockWindow(ctk.CTkToplevel):
+class _ActionStatusMixin:
+    """Shared "working -> success / failure" status phase for the dialogs that first gather a secret
+    (the store key, or a robot's password) and then double as the status window for the action that
+    needed it.
+
+    The host dialog must create ``self._msg`` and ``self._status`` labels and call
+    ``_init_status_widgets()`` in its ``__init__``. Once it has what it needs it hides its own inputs
+    and switches ``self._msg``/``self._bar`` into the working state; the caller then drives
+    ``show_success`` / ``show_failure``.
+    """
+
+    def _init_status_widgets(self):
+        # Created up front but packed only once we reach the working / result phases.
+        self._bar = ctk.CTkProgressBar(self, width=320, mode="indeterminate")
+        self._icon = ctk.CTkLabel(self, text="", font=ctk.CTkFont(size=36))
+        self._close_btn = ctk.CTkButton(self, text="Close", fg_color="gray40",
+                                        command=self._safe_destroy)
+
+    def show_success(self, message):
+        if not self.winfo_exists():
+            return
+        self._bar.stop()
+        self._bar.pack_forget()
+        self._icon.configure(text="✓", text_color="#2E8B3A")
+        self._icon.pack(pady=(4, 8))
+        self._msg.configure(text=message, text_color="#2E8B3A")
+        self._close_btn.pack(pady=(0, 14))
+        self.after(4000, self._safe_destroy)
+
+    def show_failure(self, message):
+        if not self.winfo_exists():
+            return
+        self._bar.stop()
+        self._bar.pack_forget()
+        self._icon.configure(text="✕", text_color="#CC3333")
+        self._icon.pack(pady=(4, 8))
+        self._msg.configure(text=message, text_color="#CC3333")
+        self._close_btn.pack(pady=(0, 14))
+
+    def _safe_destroy(self):
+        if self.winfo_exists():
+            self.destroy()
+
+
+class PasswordUnlockWindow(_ActionStatusMixin, ctk.CTkToplevel):
     """Prompts for the shared key to unlock the robot-password store, then doubles as the status
     window for the robot action that triggered it.
 
@@ -298,11 +435,7 @@ class PasswordUnlockWindow(ctk.CTkToplevel):
                                     justify="center")
         self._status.pack(pady=(0, 8))
 
-        # Phase-2/3 widgets, created now but packed only when we reach those phases.
-        self._bar = ctk.CTkProgressBar(self, width=320, mode="indeterminate")
-        self._icon = ctk.CTkLabel(self, text="", font=ctk.CTkFont(size=36))
-        self._close_btn = ctk.CTkButton(self, text="Close", fg_color="gray40",
-                                        command=self._safe_destroy)
+        self._init_status_widgets()  # phase-2/3 status widgets (progress bar / icon / close)
 
         self._btns = ctk.CTkFrame(self, fg_color="transparent")
         self._btns.pack(pady=(0, 12))
@@ -358,30 +491,133 @@ class PasswordUnlockWindow(ctk.CTkToplevel):
         self._bar.pack(pady=(4, 14), padx=20)
         self._bar.start()
 
-    def show_success(self, message):
+
+class AddRobotPasswordWindow(_ActionStatusMixin, ctk.CTkToplevel):
+    """Prompts for a robot's bd password when that robot isn't in the encrypted store yet, then
+    doubles as the status window for the action that triggered it.
+
+    Shown only on a store *miss* for a robot (see ``robot_detail._run_robot_action``), and only after
+    the store itself is already unlocked. Two phases:
+
+      1. **Entry + verify** -- on open it opens the robot's internal password-lookup page in the
+         browser (best-effort; ``lookup_url`` may be None) so the operator can read the bd password,
+         and takes it in a masked field. On submit ``verify(password)`` -- a login-only,
+         non-mutating check -- runs on a worker thread; a wrong password / unreachable robot shows an
+         inline error and the field stays open to retry. On success ``on_resolved(password)`` fires
+         exactly once (releasing the waiting action worker, which persists the password); a cancel
+         fires ``on_resolved(None)``.
+      2. **Action status** -- after a verified password the window switches to a "sending..." state
+         and the caller drives ``show_success`` / ``show_failure`` for the action itself.
+    """
+
+    def __init__(self, parent, robot_name, action_name, lookup_url, verify, on_resolved):
+        super().__init__(parent)
+        self.title("Add Robot Password")
+        self.geometry("500x340")
+        self.resizable(False, False)
+        self.transient(parent)
+        self._verify = verify
+        self._on_resolved = on_resolved
+        self._resolved = False
+
+        ctk.CTkLabel(self, text=f"{action_name} — {robot_name}",
+                     font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(20, 4))
+
+        if lookup_url and open_url(lookup_url):
+            note = (f"{robot_name} isn't in the password store yet. Its password-lookup page has "
+                    "been opened in your browser — copy the bd password from there and paste it "
+                    "below to add it.")
+        elif lookup_url:
+            note = (f"{robot_name} isn't in the password store yet. Open its password-lookup page "
+                    "manually, then paste the bd password below to add it.")
+        else:
+            note = (
+                f"{robot_name} isn't in the password store yet, and its lookup page couldn't be "
+                "opened automatically (robot unreachable). Look up the bd password and paste it "
+                "below to add it.")
+        self._msg = ctk.CTkLabel(self, text=note, text_color=SUBTLE_TEXT, wraplength=460,
+                                 justify="center")
+        self._msg.pack(pady=(0, 10))
+
+        self._entry_var = ctk.StringVar()
+        self._entry = ctk.CTkEntry(self, textvariable=self._entry_var, width=390, show="•",
+                                   placeholder_text="bd password")
+        self._entry.pack(pady=(0, 8))
+        self._entry.bind("<Return>", lambda _e: self._submit())
+
+        self._status = ctk.CTkLabel(self, text="", text_color=SUBTLE_TEXT, wraplength=460,
+                                    justify="center")
+        self._status.pack(pady=(0, 8))
+
+        self._init_status_widgets()  # phase-2/3 status widgets (progress bar / icon / close)
+
+        self._btns = ctk.CTkFrame(self, fg_color="transparent")
+        self._btns.pack(pady=(0, 12))
+        self._submit_btn = ctk.CTkButton(self._btns, text="Verify & Save", width=130,
+                                         command=self._submit)
+        self._submit_btn.pack(side="left", padx=6)
+        ctk.CTkButton(self._btns, text="Cancel", width=110, fg_color="gray40",
+                      command=self._cancel).pack(side="left", padx=6)
+
+        self.protocol("WM_DELETE_WINDOW", self._cancel)
+        self.wait_visibility()
+        self.grab_set()
+        self._entry.focus()
+
+    def _resolve(self, result):
+        """Release the waiting worker with ``result`` (the verified password, or None).
+
+        Fires once.
+        """
+        if self._resolved:
+            return
+        self._resolved = True
+        self._on_resolved(result)
+
+    def _submit(self):
+        password = self._entry_var.get()
+        if not password:
+            self._status.configure(text="Please enter the robot's bd password.",
+                                   text_color="#CC3333")
+            return
+        self._submit_btn.configure(state="disabled")
+        self._entry.configure(state="disabled")
+        self._status.configure(text="Verifying with the robot...", text_color=SUBTLE_TEXT)
+        # verify() logs in to the robot (a network call) -- run it off the Tk main thread.
+        threading.Thread(target=self._verify_worker, args=(password,), daemon=True).start()
+
+    def _verify_worker(self, password):
+        try:
+            ok = bool(self._verify(password))
+        except Exception:  # noqa: BLE001 -- any verify error means "couldn't confirm the password"
+            ok = False
+        self.after(0, lambda: self._verify_done(password, ok))
+
+    def _verify_done(self, password, ok):
         if not self.winfo_exists():
             return
-        self._bar.stop()
-        self._bar.pack_forget()
-        self._icon.configure(text="✓", text_color="#2E8B3A")
-        self._icon.pack(pady=(4, 8))
-        self._msg.configure(text=message, text_color="#2E8B3A")
-        self._close_btn.pack(pady=(0, 14))
-        self.after(4000, self._safe_destroy)
-
-    def show_failure(self, message):
-        if not self.winfo_exists():
+        if not ok:
+            self._submit_btn.configure(state="normal")
+            self._entry.configure(state="normal")
+            self._status.configure(
+                text="Password incorrect or the robot is not accessible. Try again.",
+                text_color="#CC3333")
+            self._entry.focus()
             return
-        self._bar.stop()
-        self._bar.pack_forget()
-        self._icon.configure(text="✕", text_color="#CC3333")
-        self._icon.pack(pady=(4, 8))
-        self._msg.configure(text=message, text_color="#CC3333")
-        self._close_btn.pack(pady=(0, 14))
+        self._resolve(password)
+        self._enter_working_phase()
 
-    def _safe_destroy(self):
-        if self.winfo_exists():
-            self.destroy()
+    def _cancel(self):
+        self._resolve(None)
+        self._safe_destroy()
+
+    def _enter_working_phase(self):
+        self._entry.pack_forget()
+        self._btns.pack_forget()
+        self._msg.configure(text="Password verified. Sending command...", text_color=SUBTLE_TEXT)
+        self._status.configure(text="")
+        self._bar.pack(pady=(4, 14), padx=20)
+        self._bar.start()
 
 
 class AddRobotWindow(ctk.CTkToplevel):

@@ -15,3 +15,5 @@ secrets/*decrypted*
 
 # Temporary one-off bootstrap that re-introduces cookie scraping to seed the store; delete after use.
 password_collector.py
+
+UI_Handler.spec

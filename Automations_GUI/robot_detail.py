@@ -14,10 +14,11 @@ import customtkinter as ctk
 import cv2
 import glossary
 import logger_setup
-from API_Post import Robot_comms, password_store, robot_password
-from dialogs import PasswordUnlockWindow
+from dialogs import AddRobotPasswordWindow, PasswordUnlockWindow
 from logger_setup import log_calls
+from Password_Management import Robot_comms, password_store, robot_password
 from PIL import Image, ImageTk
+from Sheets_Automation import API_fetch, Info_Parser
 
 # Force the FFMPEG backend to use TCP for RTSP (more reliable than the default UDP for the Reolink
 # NVR streams). Must be set before any cv2.VideoCapture(..., CAP_FFMPEG) call.
@@ -43,6 +44,29 @@ ZONE_TYPES = glossary.ZONE_TYPES
 
 # Same configured "OPS" logger that UI_Handler set up via logger_setup.setup_logging().
 logger = logging.getLogger(logger_setup.LOGGER_NAME)
+
+# Internal Robot Password Lookup page. Opened for the operator (best-effort) when a robot isn't in
+# the encrypted store yet, so they can read its bd password and add it (see _password_lookup_url).
+PASSWORD_LOOKUP_URL = "https://internal.bosdyn.com/robot-password/lookup"
+
+
+def _password_lookup_url(robot_name: str) -> str | None:
+    """Best-effort URL of the internal password-lookup page for ``robot_name``.
+
+    The page is keyed by the robot's real lookup serial (``ssd-<description.serial>``), which is read
+    live from the robot's robot-info backend. Returns None if the robot is unreachable or reports no
+    serial (then the operator just enters the password manually). Runs on a worker thread.
+    """
+    raw = API_fetch.API_Fetch(robot_name.lower(), [])
+    if raw is None:
+        return None
+    try:
+        serial = (Info_Parser.info_parser(raw).serial or "").strip()
+    except Exception:  # noqa: BLE001 -- malformed payload; fall back to manual entry
+        logger.exception("Could not parse robot-info for %s while building its lookup URL.",
+                         robot_name)
+        return None
+    return f"{PASSWORD_LOOKUP_URL}?serial=ssd-{serial}" if serial else None
 
 
 def build_camera_url(channel: int, zone_id=None) -> str:
@@ -177,9 +201,12 @@ class RobotDetailWindow(ctk.CTkToplevel):
 
     @log_calls
     def _run_robot_action(self, action_name, action_func):
-        # Holds the PasswordUnlockWindow, created lazily and ONLY if the password store isn't already
-        # unlocked this session. Once shown it also serves as this action's status window.
+        # The dialog windows, created lazily on the main thread. At most one is shown at a time and
+        # whichever is live doubles as this action's status window:
+        #   * unlock_win -- the key prompt (only if the store isn't already unlocked this session).
+        #   * add_win    -- the "add this robot's password" prompt (only on a store miss).
         unlock_win = {"window": None}
+        add_win = {"window": None}
 
         def unlock(blob):
             """Called on the worker thread when the store must be unlocked.
@@ -206,26 +233,82 @@ class RobotDetailWindow(ctk.CTkToplevel):
             resolved.wait()
             return result["store"]
 
-        def finish_success():
-            win = unlock_win["window"]
-            if win is not None and win.winfo_exists():
-                win.show_success(f"{action_name} sent to {self._robot_name}.")
+        def prompt_new_password():
+            """Called on the worker thread when the robot isn't in the store.
+
+            Opens the robot's lookup page + a password prompt on the main thread and blocks until
+            the user submits a password that verifies against the robot (returns it) or cancels
+            (returns None). If the unlock window is still up (the store was just unlocked), it's
+            closed first so the add window becomes this action's status window.
+            """
+            lookup_url = _password_lookup_url(
+                self._robot_name)  # network; safe on this worker thread
+            resolved = threading.Event()
+            result = {"password": None}
+
+            def create():
+                win = unlock_win["window"]
+                if win is not None and win.winfo_exists():
+                    win.destroy()
+                if not self.winfo_exists():
+                    resolved.set()
+                    return
+                add_win["window"] = AddRobotPasswordWindow(
+                    self,
+                    self._robot_name,
+                    action_name,
+                    lookup_url,
+                    verify=lambda pw: Robot_comms.password_is_valid(self._robot_name, pw),
+                    on_resolved=lambda pw: (result.update(password=pw), resolved.set()),
+                )
+
+            self.after(0, create)
+            resolved.wait()
+            return result["password"]
+
+        def active_window():
+            for holder in (add_win, unlock_win):
+                win = holder["window"]
+                if win is not None and win.winfo_exists():
+                    return win
+            return None
+
+        def finish_success(added):
+            win = active_window()
+            if win is not None:
+                message = f"{action_name} sent to {self._robot_name}."
+                if added:
+                    message += " Password saved to the store."
+                win.show_success(message)
 
         def finish_failure(message):
-            win = unlock_win["window"]
-            if win is not None and win.winfo_exists():
+            win = active_window()
+            if win is not None:
                 win.show_failure(message)
 
         def worker():
             try:
-                password = robot_password.get_robot_password(self._robot_name, unlock=unlock)
-                if not password:
-                    logger.warning("%s: could not retrieve password for %s", action_name,
-                                   self._robot_name)
-                    self.after(0, lambda: finish_failure("Could not retrieve the robot password."))
-                    return
+                result = robot_password.get_robot_password(self._robot_name, unlock=unlock)
+                if result.status == "cancelled":
+                    return  # user dismissed the unlock prompt; nothing to do
+                added = False
+                if result.status == "missing":
+                    password = prompt_new_password()
+                    if not password:
+                        return  # user cancelled the add prompt
+                    # Password already verified against the robot -- persist it now, regardless of
+                    # whether the command below succeeds, so it isn't re-prompted next time.
+                    try:
+                        robot_password.add_robot_password(result.store, self._robot_name, password)
+                        added = True
+                    except Exception:
+                        logger.exception(
+                            "Verified %s but could not save its password to the store.",
+                            self._robot_name)
+                else:
+                    password = result.password
                 action_func(self._robot_name, password)
-                self.after(0, finish_success)
+                self.after(0, lambda: finish_success(added))
             except Exception:
                 logger.exception("Robot action '%s' failed for %s", action_name, self._robot_name)
                 self.after(0, lambda: finish_failure("The command failed."))

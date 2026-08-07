@@ -3,18 +3,19 @@
 # Copyright 2026. All Rights Reserved.
 """Maintainer CLI for the encrypted robot-password store.
 
-The GUI only ever *reads* the store (see API_Post/robot_password.py). This tool is how a maintainer
-*edits* it: it decrypts ``secrets/robot_passwords.age``, applies a change, and re-encrypts it to the
-public recipient in ``secrets/recipient.txt``. It's built on the same pure ``password_store`` module
-the GUI uses, so there's no separate format and no external ``sops``/``age`` binary. Run it from the
-Automations_GUI directory (it edits secrets/ at the package root, the same store the GUI reads):
+The GUI mostly *reads* the store (see Password_Management/robot_password.py); it can also append a
+single verified entry on a miss. This tool is the maintainer's full *editor*: it decrypts
+``secrets/robot_passwords.age``, applies a change (set/remove/keygen), and re-encrypts
+it to the public recipient in ``secrets/recipient.txt``. It's built on the same pure ``password_store``
+module the GUI uses, so there's no separate format and no external ``sops``/``age`` binary. Run it from
+the Automations_GUI directory (it edits secrets/ at the package root, the same store the GUI reads):
 
-    python3 API_Post/manage_password_store.py keygen        # new shared keypair (rotation/setup)
-    python3 API_Post/manage_password_store.py list          # nicknames + fields (never passwords)
-    python3 API_Post/manage_password_store.py set sb27      # prompt (hidden) for sb27's web.bd pw
-    python3 API_Post/manage_password_store.py set sb27 --field admin
-    python3 API_Post/manage_password_store.py remove sb27   # drop the whole robot
-    python3 API_Post/manage_password_store.py remove sb27 --field admin
+    python3 Password_Management/manage_password_store.py keygen   # new shared keypair (rotation/setup)
+    python3 Password_Management/manage_password_store.py list     # nicknames + fields (never passwords)
+    python3 Password_Management/manage_password_store.py set sb27  # prompt (hidden) for sb27's web.bd pw
+    python3 Password_Management/manage_password_store.py set sb27 --field admin
+    python3 Password_Management/manage_password_store.py remove sb27   # drop the whole robot
+    python3 Password_Management/manage_password_store.py remove sb27 --field admin
 
 The shared **secret** key (needed by every command that reads existing entries: list/set/remove) is
 read from ``$OPS_ROBOT_PASSWORD_KEY`` if set, otherwise prompted for without echo. It is never taken
@@ -26,16 +27,16 @@ import os
 import pathlib
 import sys
 
-HERE = pathlib.Path(__file__).resolve().parent  # the API_Post package dir
+HERE = pathlib.Path(__file__).resolve().parent  # the Password_Management package dir
 PACKAGE_ROOT = HERE.parent  # Automations_GUI (package root)
-# password_store is a sibling module in API_Post; ensure it imports whether this tool is run as a
-# script (its own dir is already on sys.path) or imported as API_Post.manage_password_store.
+# password_store is a sibling module in Password_Management; ensure it imports whether this tool is run
+# as a script (its own dir is already on sys.path) or imported as Password_Management.manage_password_store.
 sys.path.insert(0, str(HERE))
 
 import password_store as ps
 
 # The store + recipient live in secrets/ at the package root -- the SAME folder the GUI reads from
-# (see robot_password._store_path), NOT next to this tool under API_Post/.
+# (see robot_password._store_path), NOT next to this tool under Password_Management/.
 SECRETS_DIR = PACKAGE_ROOT / "secrets"
 STORE_PATH = SECRETS_DIR / "robot_passwords.age"
 RECIPIENT_PATH = SECRETS_DIR / "recipient.txt"

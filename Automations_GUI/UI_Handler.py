@@ -7,25 +7,26 @@ import pathlib as Path
 import shutil
 import sys
 import threading
-from tkinter import messagebox
+from tkinter import PhotoImage, messagebox
 
 import config_migrate
 import customtkinter as ctk
 import glossary
 import logger_setup
 from afse_monitoring import AfseMonitoringMixin
-from API_Post import robot_password
 from config_editing import ConfigEditor
 from dialogs import (
     AddRobotWindow,
     ConfigUpdateWindow,
     ErrorWindow,
+    FavoritesWindow,
     RemoveRobotWindow,
     SettingsWindow,
     UpdateWindow,
 )
 from git import InvalidGitRepositoryError, Repo
 from logger_setup import log_calls
+from Password_Management import robot_password
 from robot_detail import RobotDetailWindow
 from sheet_editor import SheetEditorMixin
 from Sheets_Automation import Sheets_editor, Zone_scanner
@@ -42,6 +43,18 @@ VERSION_NUMBER_MINOR = 4
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
+
+
+def resource_path(*parts) -> Path.Path:
+    """Absolute path to a bundled resource, working from source AND from a PyInstaller build.
+
+    PyInstaller unpacks data files bundled via the spec's ``datas`` (or ``--add-data``) into a temp
+    dir exposed as ``sys._MEIPASS`` (one-file builds); a plain source run anchors at this file's
+    directory instead. Use e.g. ``resource_path("assets", "icon.png")``.
+    """
+    base = getattr(sys, "_MEIPASS", None)
+    base = Path.Path(base) if base else Path.Path(__file__).resolve().parent
+    return base.joinpath(*parts)
 
 
 def find_config() -> Path.Path:
@@ -113,6 +126,17 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
 
         self.title("OPS Automations")
 
+        # Title-bar / taskbar / dock icon shown while the app runs. iconphoto(True, ...) also makes
+        # it the default for child dialogs. On Linux the executable itself carries no icon (that's
+        # the .desktop launcher's Icon= line); this is what sets the running app's icon. Bundled via
+        # the PyInstaller spec's datas and located with resource_path. Kept on self so Tk doesn't
+        # garbage-collect the image out from under the window.
+        try:
+            self._icon_image = PhotoImage(file=str(resource_path("assets", "icon.png")))
+            self.iconphoto(True, self._icon_image)
+        except Exception:  # noqa: BLE001 -- a missing/unsupported icon must never block startup
+            logger.warning("Could not set the window icon", exc_info=True)
+
         self.minsize(750, 500)
 
         self.grid_columnconfigure(0, weight=1)
@@ -166,7 +190,7 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
 
 #----------------------------------------------------------------------------------------------------------------------------------------
 
-#region Baseline Functions
+#region Base Functions
 
     def build_main_area(self):
         self.tab_view = ctk.CTkTabview(self, corner_radius=8)
@@ -201,6 +225,9 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
             width=130,
         ).pack(padx=12, pady=4, anchor="n")
 
+        ctk.CTkButton(self.sidebar, text="Add To Favorites", command=self.favorites_settings,
+                      width=130).pack(padx=12, pady=4, anchor="n")
+
         ctk.CTkLabel(self.sidebar,
                      text=f"Version {VERSION_NUMBER_MAJOR}.{VERSION_NUMBER_MINOR}").pack(
                          padx=12, pady=4, anchor="s")
@@ -212,7 +239,7 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
 
 #----------------------------------------------------------------------------------------------------------------------------------------
 
-# region Auxiliary Functions
+# region Aux. Functions
 
     def load_config(self):
         with open(CONFIG_PATH, "r") as f:
@@ -227,6 +254,13 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
     def open_settings(self):
         if not hasattr(self, "_settings_win") or not self._settings_win.winfo_exists():
             self._settings_win = SettingsWindow(self)
+
+    @log_calls
+    def favorites_settings(self):
+        if not hasattr(self, "_favorites_win") or not self._favorites_win.winfo_exists():
+            self._favorites_win = FavoritesWindow(self)
+        else:
+            self._favorites_win.focus()
 
     def _apply_ui_scaling(self, factor):
         """Override CustomTkinter's (unreliable on Linux) DPI auto-detection."""

@@ -150,4 +150,25 @@ def get_auth_token(robot, password):
         raise
 
 
+def password_is_valid(robot: str, password: str) -> bool:
+    """Confirm a candidate bd password without changing the robot's behavior.
+
+    Attempts a login only (``get_auth_token``); a returned token means the password is valid. Any
+    request/response error -- a wrong password (HTTP 401), an unreachable robot, a malformed
+    response -- is treated as "not valid". Used to verify a newly entered password before it is saved
+    to the encrypted store.
+
+    Args:
+        robot (str): The address or hostname of the robot.
+        password (str): The candidate bd password to check.
+
+    Returns:
+        bool: True if the password authenticates, False otherwise.
+    """
+    try:
+        return bool(get_auth_token(robot, password))
+    except (requests.RequestException, ValueError):
+        return False
+
+
 #endregion

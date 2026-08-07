@@ -1,0 +1,26 @@
+# --- Robot password store: never commit plaintext or private keys ---------------------------------
+# The ENCRYPTED store (secrets/robot_passwords.age) and the PUBLIC recipient
+# (secrets/recipient.txt) are meant to be committed. Everything below is the
+# stuff that must never reach git: the shared private key and any decrypted
+# copy of the store.
+Automations_GUI/secrets/*.key
+Automations_GUI/secrets/*.agekey
+Automations_GUI/secrets/*age-secret*
+Automations_GUI/secrets/identity*
+Automations_GUI/*.age-identity
+# Any plaintext / decrypted dump of the store.
+Automations_GUI/secrets/*.plain.json
+Automations_GUI/secrets/*.plaintext
+Automations_GUI/secrets/*decrypted*
+
+# Temporary one-off bootstrap that re-introduces cookie scraping to seed the store; delete after use.
+Automations_GUI/password_collector.py
+
+Automations_GUI/UI_Handler.spec
+
+Automations_GUI/__pycache__
+Automations_GUI/build
+Automations_GUI/dist
+
+Automations_GUI/Password_Management/__pycache__
+Automations_GUI/Sheets_Automation/__pycache__

@@ -26,6 +26,7 @@ Flow (see ``password_store.py`` for the pure crypto and ``manage_password_store.
 import logging
 import os
 import pathlib
+import sys
 import threading
 import time
 from typing import NamedTuple
@@ -66,16 +67,46 @@ _lock = threading.Lock()
 _store_cache: dict = {"store": None, "expiry": 0.0}
 
 
+# Directory holding robot_passwords.age + recipient.txt. The GUI overrides this at startup (see
+# set_secrets_dir) to point at a persistent, WRITABLE, outside-git location next to the config file,
+# so add_robot_password can rewrite the store and local edits never collide with the git auto-update.
+_secrets_dir_override: pathlib.Path | None = None
+
+
+def set_secrets_dir(path) -> None:
+    """Point the store + recipient at ``path`` (a directory).
+
+    The GUI calls this once at startup so the store lives in a persistent, writable spot next to the
+    config -- NOT inside the read-only PyInstaller onefile bundle. Must be called before any
+    get_robot_password / add_robot_password call.
+    """
+    global _secrets_dir_override
+    _secrets_dir_override = pathlib.Path(path)
+
+
+def _secrets_dir() -> pathlib.Path:
+    """Directory the store + recipient live in.
+
+    Uses the GUI-supplied override when set. Otherwise falls back to a location that still works
+    unconfigured: next to the executable for a frozen build (NOT ``sys._MEIPASS`` -- that temp
+    extraction dir is wiped on exit, so writes there would be lost), or the package's ``secrets/``
+    for a source checkout.
+    """
+    if _secrets_dir_override is not None:
+        return _secrets_dir_override
+    if getattr(sys, "frozen", False):
+        return pathlib.Path(sys.executable).resolve().parent / "secrets"
+    return pathlib.Path(__file__).resolve().parent.parent / "secrets"
+
+
 def _store_path() -> pathlib.Path:
-    """Location of the encrypted store: ``secrets/`` next to the Automations_GUI package."""
-    base = pathlib.Path(__file__).resolve().parent.parent
-    return base / "secrets" / STORE_FILENAME
+    """Location of the encrypted store."""
+    return _secrets_dir() / STORE_FILENAME
 
 
 def _recipient_path() -> pathlib.Path:
     """Location of the public age recipient (used only to write/re-encrypt the store)."""
-    base = pathlib.Path(__file__).resolve().parent.parent
-    return base / "secrets" / RECIPIENT_FILENAME
+    return _secrets_dir() / RECIPIENT_FILENAME
 
 
 def clear_password_cache() -> None:

@@ -80,10 +80,41 @@ def find_config() -> Path.Path:
     return path_outside_repo
 
 
+def find_or_seed_secrets(config_dir: Path.Path) -> Path.Path:
+    """Ensure a writable ``secrets/`` exists next to the config, seeding it once from the copy baked
+    into the app, and point robot_password at it.
+
+    The encrypted store is read-WRITE at runtime (the GUI can add a newly discovered robot's
+    password), so it can't live in the read-only PyInstaller bundle, nor inside the git clone (local
+    edits would collide with the git auto-update pull). Instead we keep it beside the config file --
+    a persistent, user-writable, outside-git location -- and copy the bundled seed
+    (robot_passwords.age + recipient.txt) there the first time. Existing files are never overwritten,
+    so passwords added locally survive app updates. Mirrors how find_config locates the config.
+    """
+    live = config_dir / "secrets"
+    seed = resource_path("secrets")  # baked into the exe (frozen) or the source secrets/ (dev)
+    try:
+        live.mkdir(parents=True, exist_ok=True)
+        for name in (robot_password.STORE_FILENAME, robot_password.RECIPIENT_FILENAME):
+            dst, src = live / name, seed / name
+            if not dst.exists() and src.exists():
+                shutil.copy2(src, dst)
+                logger.info("Seeded %s from the bundled copy.", dst)
+    except Exception:  # noqa: BLE001 -- seeding must never block startup; store just stays absent
+        logger.warning("Could not seed the secrets folder at %s", live, exc_info=True)
+    robot_password.set_secrets_dir(live)
+    return live
+
+
 CONFIG_PATH = find_config()
 
 # Set up logging as early as possible (logs live in a folder next to Automation_GUI_Config.json).
 logger = logger_setup.setup_logging(CONFIG_PATH.parent / "logs")
+
+# The encrypted robot-password store is writable at runtime, so it lives next to the config (a
+# persistent, outside-git spot), seeded once from the copy baked into the app. Must run before any
+# robot action can read/write the store. See find_or_seed_secrets / robot_password.set_secrets_dir.
+find_or_seed_secrets(CONFIG_PATH.parent)
 
 # UI appearance / layout constants -- defined in glossary.py, aliased here (see note above).
 TAB_COLORS = glossary.TAB_COLORS

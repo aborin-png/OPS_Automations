@@ -17,3 +17,10 @@ secrets/*decrypted*
 password_collector.py
 
 UI_Handler.spec
+
+__pycache__
+build
+dist
+
+Password_Management/__pycache__
+Sheets_Automation/__pycache__

@@ -173,7 +173,7 @@ black -> unreadable. The tuples keep the UI readable in BOTH appearance modes.
 '''
 
 # Tab title -> accent color for the main notebook tabs. Affects: UI_Handler.py.
-TAB_COLORS = {"Sheet Editor": "#5B9BD5", "AFSE Monitoring": "#a244eb", "Config Editing": "#1fdb74"}
+TAB_COLORS = {"Sheet Editor": "#5B9BD5", "Robot Monitoring": "#a244eb", "Config Editing": "#1fdb74"}
 
 # Robot status code -> (color, label) shown on each robot card. Affects: UI_Handler.py.
 STATUS_COLORS = {
@@ -195,7 +195,7 @@ CHARGE_STATUS = {
     5: ('#CC3333', 'OFFLINE'),
 }
 
-# Number of robot cards per row in the AFSE monitoring grid. Affects: UI_Handler.py.
+# Number of robot cards per row in the Robot Monitoring grid. Affects: UI_Handler.py.
 ROBOT_CARD_COLS = 4
 
 # (light_mode, dark_mode) color pairs (see note above). Affects: UI_Handler.py.
@@ -276,6 +276,8 @@ CONFIG_TEMPLATE = {
             }
         }
     },
+    # Monitored-robot list for the Robot Monitoring tab. The "AFSE" key name is legacy (the tab used
+    # to be called "AFSE Monitoring"); it's kept as-is so existing user configs aren't broken.
     "AFSE": {
         "Robots": ["sb20", "sb12", "sb24", "sb13", "sb16", "sb25", "sb17", "sb18"]
     },
@@ -312,7 +314,7 @@ class RobotInfo:
     Build instances with ``RobotInfo.from_api(raw_json_string)`` -- ``from_api`` is the ONLY code
     that knows the nested shape of the API payload, so when the API changes there is a single place
     to update. Each field's comment gives its original API path so the mapping is auditable at a
-    glance. Fields default to the same values the AFSE view treats as "offline", so a malformed or
+    glance. Fields default to the same values the Robot Monitoring view treats as "offline", so a malformed or
     unreachable robot degrades gracefully instead of raising.
 
     The ``Data`` blocks in CONFIG_TEMPLATE map a sheet column label to one of the attribute /
@@ -344,18 +346,59 @@ class RobotInfo:
     z0_fw_major: int = 0  # status.safetyState.z0Version.fwMajorVersion
     z0_fw_minor: int = 0  # status.safetyState.z0Version.fwMinorVersion
     z0_api_major: int = 0  # status.safetyState.z0Version.apiMajorVersion
+    y0_fw_gen1: int = 0  # status.adsVersionNumber
+    y0_fw_gen1_major: int = 0  # status.safetyState.onRobotVersion.fwMajorVersion
+    y0_fw_gen1_minor: int = 0  # status.safetyState.onRobotVersion.fwMinorVersion
+    y0_api_gen1_major: int = 0  # status.safetyState.onRobotVersion.apiMajorVersion
+    y0_api_gen1_minor: int = 0  # status.safetyState.onRobotVersion.apiMinorVersion
+    z0_fw_gen1: int = 0  # status.z0VersionNumber
+    z0_fw_gen1_major: int = 0  # status.safetyState.z0Version.fwMajorVersion
+    z0_fw_gen1_minor: int = 0  # status.safetyState.z0Version.fwMinorVersion
+    z0_api_gen1_major: int = 0  # status.safetyState.z0Version.apiMajorVersion
+    z0_api_gen1_minor: int = 0  # status.safetyState.z0Version.apiMinorVersion
 
     #---- Derived values (previously computed inline by the CONFIG_TEMPLATE eval strings) ----
 
     @property
+    def decrypt_gen1(self, version_num):
+
+        def create_mask(a, b):
+
+            mask = 0
+            if a > b:
+                a, b = b, a
+            for i in range(a, b + 1):
+                mask |= 1 << i
+            return mask
+
+        major_patch = (create_mask(24, 31) & version_num) >> 24
+        minor_patch = (create_mask(16, 23) & version_num) >> 16
+        major_api = (create_mask(8, 15) & version_num) >> 8
+        minor_api = (create_mask(0, 7) & version_num)
+
+        return f"{major_patch}.{minor_patch}.{major_api}.{minor_api}"
+
+    @property
     def y0_version(self) -> str:
-        return f"{self.y0_fw_major}.0.{self.y0_api_major}.0"
+        if "sa" in self.nickname:
+            if self.y0_fw_gen1 is not None:
+                return self.decrypt_gen1(self.y0_fw_gen1)
+            else:
+                return f"{self.y0_fw_gen1_major}.{self.y0_fw_gen1_minor}.{self.y0_api_gen1_major}.{self.y0_api_gen1_minor}"
+        else:
+            return f"{self.y0_fw_major}.0.{self.y0_api_major}.0"
 
     @property
     def z0_version(self) -> str:
         if not self.zone_connected:
             return "0.0.0.0"
-        return f"{self.z0_fw_major}.{self.z0_fw_minor}.{self.z0_api_major}.0"
+        elif "sa" in self.nickname:
+            if self.z0_fw_gen1 is not None:
+                return self.decrypt_gen1(self.z0_fw_gen1)
+            else:
+                return f"{self.z0_fw_gen1_major}.{self.z0_fw_gen1_minor}.{self.z0_api_gen1_major}.{self.z0_api_gen1_minor}"
+        else:
+            return f"{self.z0_fw_major}.{self.z0_fw_minor}.{self.z0_api_major}.0"
 
     @property
     def date(self) -> str:
@@ -374,8 +417,8 @@ class RobotInfo:
 
     @property
     def connected_zone_id(self):
-        """Zone id when connected, else the string 'None' -- the convention the AFSE view uses as a
-        ZONE_NAMES / CAMERA_CHANNELS lookup key."""
+        """Zone id when connected, else the string 'None' -- the convention the Robot Monitoring
+        view uses as a ZONE_NAMES / CAMERA_CHANNELS lookup key."""
         if self.zone_connected and self.zone_id is not None:
             return self.zone_id
         return "None"
@@ -407,6 +450,16 @@ class RobotInfo:
             z0_fw_major=dig(data, "status.safetyState.z0Version.fwMajorVersion", 0),
             z0_fw_minor=dig(data, "status.safetyState.z0Version.fwMinorVersion", 0),
             z0_api_major=dig(data, "status.safetyState.z0Version.apiMajorVersion", 0),
+            y0_fw_gen1=dig(data, "status.adsVersionNumber"),
+            y0_fw_gen1_major=dig(data, "status.safetyState.onRobotVersion.fwMajorVersion", 0),
+            y0_fw_gen1_minor=dig(data, "status.safetyState.onRobotVersion.fwMinorVersion", 0),
+            y0_api_gen1_major=dig(data, "status.safetyState.onRobotVersion.apiMajorVersion", 0),
+            y0_api_gen1_minor=dig(data, "status.safetyState.onRobotVersion.apiMinorVersion", 0),
+            z0_fw_gen1=dig(data, "status.z0VersionNumber"),
+            z0_fw_gen1_major=dig(data, "status.safetyState.z0Version.fwMajorVersion", 0),
+            z0_fw_gen1_minor=dig(data, "status.safetyState.z0Version.fwMinorVersion", 0),
+            z0_api_gen1_major=dig(data, "status.safetyState.z0Version.apiMajorVersion", 0),
+            z0_api_gen1_minor=dig(data, "status.safetyState.z0Version.apiMinorVersion", 0),
         )
 
     @staticmethod

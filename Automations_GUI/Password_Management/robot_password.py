@@ -66,7 +66,6 @@ class AuthenticationRequired(RuntimeError):
 _lock = threading.Lock()
 _store_cache: dict = {"store": None, "expiry": 0.0}
 
-
 # Directory holding robot_passwords.age + recipient.txt. The GUI overrides this at startup (see
 # set_secrets_dir) to point at a persistent, WRITABLE, outside-git location next to the config file,
 # so add_robot_password can rewrite the store and local edits never collide with the git auto-update.

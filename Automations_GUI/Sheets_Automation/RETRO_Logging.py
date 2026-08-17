@@ -2,11 +2,18 @@
 # Copyright 2026. All Rights Reserved.
 """Fire a "RETRO" log against a Stretch robot via SWI.
 
-A RETRO captures the robot's recent operating data. ``take_retro_log_with_comment`` hits the
-``create-support-ticket`` (comment) and ``create-retro-log`` endpoints on the robot with the same
-message. Both endpoints are ``skipAuth`` on SWI, so no robot password is required.
+A RETRO captures the robot's recent operating data. It is split across two independent ``skipAuth``
+SWI endpoints (neither needs a robot password) so the GUI can fire them at different times:
 
-Importable from the GUI (the CLI block only runs when executed directly).
+  * ``take_retro_log``     -> POST ``create-retro-log``       (the data capture)
+  * ``take_retro_comment`` -> POST ``create-support-ticket``  (the human-written message)
+
+The GUI fires ``take_retro_log`` the instant the RETRO button is pressed -- capturing the event's
+recent-data window immediately -- and fires ``take_retro_comment`` later, once the user has finished
+typing their message and hit submit. Capturing the data first means we don't lose the event's data
+during the seconds the user spends composing the message.
+
+Importable from the GUI.
 """
 import logging
 
@@ -18,15 +25,29 @@ logger = logging.getLogger("OPS.retro_logging")
 requests.packages.urllib3.disable_warnings(
     requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
+_HEADERS = {"Content-Type": "application/json"}
 
-def take_retro_log_with_comment(robot_address, retro_message):
 
-    url_retro = f"https://{robot_address}/api/workflows/create-retro-log"
-    url_comment = f"https://{robot_address}/api/workflows/create-support-ticket"
-    headers = {"Content-Type": "application/json"}
-    payload = {"message": retro_message}
-    response_comment = requests.post(url=url_comment, headers=headers, json=payload, verify=False)
-    response_retro = requests.post(url=url_retro, headers=headers, json=payload, verify=False)
-    response_retro.raise_for_status()
-    response_comment.raise_for_status()
-    return {"retro_response": response_retro, "comment_response": response_comment}
+def take_retro_log(robot_address, message=""):
+    """POST the ``create-retro-log`` (data-capture) request to the robot and return the response.
+
+    Fired the moment the RETRO button is pressed -- before the user's message exists -- so
+    ``message`` defaults to empty; the human-written text travels with the comment
+    (``take_retro_comment``) instead. Raises on a non-2xx response.
+    """
+    url = f"https://{robot_address}/api/workflows/create-retro-log"
+    response = requests.post(url=url, headers=_HEADERS, json={"message": message}, verify=False)
+    response.raise_for_status()
+    return response
+
+
+def take_retro_comment(robot_address, message):
+    """POST the ``create-support-ticket`` (comment) request carrying the user's ``message``.
+
+    Sent on submit, after the data-capturing retro-log has already fired. Raises on a non-2xx
+    response.
+    """
+    url = f"https://{robot_address}/api/workflows/create-support-ticket"
+    response = requests.post(url=url, headers=_HEADERS, json={"message": message}, verify=False)
+    response.raise_for_status()
+    return response

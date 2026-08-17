@@ -2,7 +2,7 @@
 # Copyright 2026. All Rights Reserved.
 """The per-robot detail window (live camera feed + status + robot action buttons).
 
-Opened by clicking a robot card in the AFSE monitoring tab (see UI_Handler.py). Kept separate from
+Opened by clicking a robot card in the Robot Monitoring tab (see UI_Handler.py). Kept separate from
 UI_Handler.py because of its size and its self-contained RTSP video-streaming logic.
 """
 import logging
@@ -78,7 +78,7 @@ def build_camera_url(channel: int, zone_id=None) -> str:
 
 
 class RobotDetailWindow(ctk.CTkToplevel):
-    """Detailed per-robot view opened by clicking an AFSE monitoring card.
+    """Detailed per-robot view opened by clicking a Robot Monitoring card.
 
     Shows the robot's live camera feed (RTSP from the zone's Reolink NVR, streamed on a background
     thread) alongside charge, status, and zone readouts that are refreshed in place via

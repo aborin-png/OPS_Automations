@@ -11,14 +11,15 @@ checks, and the sheet-generation worker. The widgets themselves are built by
 import datetime
 import logging
 import threading
+from tkinter import messagebox
 
 import glossary
 import gspread
 import logger_setup
-from dialogs import ProgressWindow, SheetLogWindow
+from dialogs import ImageBannerReminderWindow, ImageUploadWindow, ProgressWindow, SheetLogWindow
 from gspread.utils import rowcol_to_a1
 from logger_setup import log_calls
-from Sheets_Automation import API_fetch, RETRO_Logging, Sheets_editor
+from Sheets_Automation import API_fetch, Drive_Images, RETRO_Logging, Sheets_editor
 
 # How many recently-created worksheets to keep in the RETRO history (persisted to the config).
 RETRO_HISTORY_LIMIT = 50
@@ -378,11 +379,12 @@ class SheetEditorMixin:
         entry = self._resolve_retro_target()
         targetable = entry is not None
         has_robot = bool(entry and entry.get("robot"))
-        # A comment only writes to the sheet, so it just needs a target; a RETRO also POSTs to the
-        # robot, so it additionally needs one (always present for "Latest"; from the Robot field for
-        # "Specific").
+        # A comment (and an image) only write to the sheet, so they just need a target; a RETRO also
+        # POSTs to the robot, so it additionally needs one (always present for "Latest"; from the
+        # Robot field for "Specific").
         self._comment_btn.configure(state="normal" if targetable else "disabled")
         self._retro_btn.configure(state="normal" if (targetable and has_robot) else "disabled")
+        self._image_btn.configure(state="normal" if targetable else "disabled")
 
     def on_retro_source_changed(self, mode: str):
         if mode == "Specific":
@@ -408,7 +410,10 @@ class SheetEditorMixin:
         """Open the message prompt for a RETRO or a plain comment.
 
         Both target the currently selected worksheet; the difference is handled in ``_send_log``
-        (only a retro POSTs to the robot and ticks the Retro checkbox).
+        (only a retro POSTs the comment to the robot and ticks the Retro checkbox). For a retro we
+        additionally fire the data-capturing retro-log *immediately* -- the instant the window opens,
+        not on submit -- so the event's recent-data window isn't lost while the user composes their
+        message (see _fire_retro_log).
         """
         entry = self._resolve_retro_target()
         if entry is None:
@@ -418,17 +423,43 @@ class SheetEditorMixin:
             title, heading, placeholder = "RETRO", "Log a RETRO", "Message (blank = 'Retro N')"
         else:
             title, heading, placeholder = "Comment", "Add a Comment", "Comment (blank = 'Comment N')"
-        SheetLogWindow(self, target_label=target, title=title, heading=heading,
-                       placeholder=placeholder,
-                       on_submit=lambda win, text: self._send_log(entry, text, win, kind),
-                       kind=kind)
+        window = SheetLogWindow(self, target_label=target, title=title, heading=heading,
+                                placeholder=placeholder,
+                                on_submit=lambda win, text: self._send_log(entry, text, win, kind),
+                                kind=kind)
+        if kind == "retro":
+            self._fire_retro_log(entry, window)
+        return window
+
+    def _fire_retro_log(self, entry: dict, window):
+        """POST the retro-log to the robot right now, in a worker thread, so pressing RETRO captures
+        the event's recent-data window immediately -- before the user spends time typing.
+
+        The message-bearing comment is sent later, on submit (_send_log). The capture's outcome is
+        reported back into the window's status line (unless the user has already submitted).
+        """
+        robot = entry.get("robot")
+        if not robot:
+            return  # a retro always has a robot (the RETRO button is disabled otherwise); guard anyway
+
+        def worker():
+            try:
+                RETRO_Logging.take_retro_log(f"{robot}.stretch")
+                logger.info("Retro-log captured for %r.", robot)
+                self.after(0, lambda: window.set_capture_result(True))
+            except Exception as e:  # noqa: BLE001 -- reported in the window / logged
+                logger.exception("Retro-log capture failed for %r", robot)
+                self.after(0, lambda err=e: window.set_capture_result(False, str(err)))
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def _send_log(self, entry: dict, message_text: str, win, kind: str):
         """Resolve the message (blank -> sequential ``Retro N`` / ``Comment N`` default), then write
         it to the worksheet in a worker thread, driving the window with the result.
 
-        A retro also POSTs the retro-log to the robot and ticks the Retro checkbox; a comment does
-        neither -- it only logs the time + message.
+        A retro also POSTs the message-bearing comment to the robot and ticks the Retro checkbox
+        (the data-capturing retro-log already fired when the window opened, see _fire_retro_log); a
+        comment does neither -- it only logs the time + message.
         """
         # Time-only (like the sheet's Ctrl+Shift+: entry); USER_ENTERED lets Sheets store it as a
         # time value and the column's own format controls how it displays.
@@ -446,7 +477,9 @@ class SheetEditorMixin:
         def worker():
             try:
                 if kind == "retro":
-                    RETRO_Logging.take_retro_log_with_comment(f'{entry["robot"]}.stretch', message)
+                    # The data-capturing retro-log already fired when the window opened
+                    # (_fire_retro_log); here we send only the message-bearing comment.
+                    RETRO_Logging.take_retro_comment(f'{entry["robot"]}.stretch', message)
                 worksheet = self._open_retro_worksheet(entry)
                 row, time_col, issue_col, retro_col = _locate_retro_row(worksheet.get_all_values())
                 updates = [
@@ -464,7 +497,10 @@ class SheetEditorMixin:
                 worksheet.batch_update(updates, value_input_option="USER_ENTERED")
                 logger.info("%s %r logged to %r row %d.", label, message, entry["worksheet_title"],
                             row)
-                self.after(0, lambda: win.finish_success(f"{label} logged: {message}"))
+                success = f"{label} logged: {message}"
+                if kind == "retro" and getattr(win, "_capture_ok", None) is False:
+                    success += "  (warning: retro data capture failed -- see log)"
+                self.after(0, lambda msg=success: win.finish_success(msg))
             except Exception as e:  # noqa: BLE001 -- surfaced to the user in the window
                 logger.exception("%s failed", label)
                 self.after(0, lambda err=e: win.finish_failure(f"{label} failed: {err}"))
@@ -481,6 +517,120 @@ class SheetEditorMixin:
                 if worksheet.id == entry["worksheet_id"]:
                     return worksheet
             return spreadsheet.worksheet(entry["worksheet_title"])
+
+    # ------------------------------------------------------------------------------------------
+    # Add Image: upload to the user's Drive, then insert via =IMAGE() into the next slot
+    # ------------------------------------------------------------------------------------------
+    @log_calls
+    def open_image_window(self):
+        """Open the "Add Image" picker for the currently targeted worksheet (same target the RETRO /
+        Comment buttons use).
+
+        Independent of the robot -- it only writes to the sheet.
+        """
+        entry = self._resolve_retro_target()
+        if entry is None:
+            return
+        target = f'{entry.get("robot") or "—"}  ·  {entry["worksheet_title"]}'
+        ImageUploadWindow(self, target_label=target,
+                          on_submit=lambda win, path: self._insert_image(entry, path, win))
+
+    def _insert_image(self, entry: dict, image_path: str, win):
+        """Kick off the image insert: find the Drive "OPS Automations Screenshots" folder (creating
+        it, after a confirmation, if missing), then upload + insert on a worker thread.
+
+        Networking runs off the Tk main thread; the folder-create confirmation and all config/UI
+        touches run on it. Drives the window's success / failure / cancelled states.
+        """
+
+        def find_folder():
+            try:
+                drive = Drive_Images.drive_service(self.authentication)
+                folder_id = Drive_Images.find_screenshots_folder(drive)
+            except Exception as e:  # noqa: BLE001 -- surfaced in the window
+                logger.exception("Drive folder lookup failed")
+                self.after(0, lambda err=e: win.finish_failure(f"Drive error: {err}"))
+                return
+            if folder_id is not None:
+                self._upload_and_insert_image(entry, image_path, win, drive, folder_id)
+            else:
+                self.after(0,
+                           lambda: self._confirm_and_create_folder(entry, image_path, win, drive))
+
+        threading.Thread(target=find_folder, daemon=True).start()
+
+    def _confirm_and_create_folder(self, entry, image_path, win, drive):
+        """Main-thread: ask whether to create the Drive folder, then create it on a worker and carry
+        on -- or cancel. The image window's modal grab is briefly released so the messagebox is
+        interactive, then restored."""
+        try:
+            win.grab_release()
+        except Exception:  # noqa: BLE001 -- grab may already be gone
+            pass
+        create = messagebox.askyesno(
+            "Create Drive folder?",
+            f"No “{Drive_Images.FOLDER_NAME}” folder was found in your Google Drive.\n\n"
+            "Create it now to store the images inserted into sheets?")
+        if win.winfo_exists():
+            try:
+                win.grab_set()
+            except Exception:  # noqa: BLE001
+                pass
+        if not create:
+            win.finish_cancelled("Cancelled — the image needs the Drive folder to be stored.")
+            return
+
+        def make_then_insert():
+            try:
+                folder_id = Drive_Images.create_screenshots_folder(drive)
+            except Exception as e:  # noqa: BLE001
+                logger.exception("Drive folder creation failed")
+                self.after(0, lambda err=e: win.finish_failure(f"Couldn't create folder: {err}"))
+                return
+            self._upload_and_insert_image(entry, image_path, win, drive, folder_id)
+
+        threading.Thread(target=make_then_insert, daemon=True).start()
+
+    def _upload_and_insert_image(self, entry, image_path, win, drive, folder_id):
+        """Worker-thread: upload + share the image, then write =IMAGE() into the next Issue
+        Description slot (stamping the Time column) and size the row. Marshals the result back."""
+        try:
+            img_w, img_h = Drive_Images.image_dimensions(image_path)
+            file_id = Drive_Images.upload_image(drive, folder_id, image_path)
+            # Share to the org's domain so teammates who open the sheet can see it (best-effort --
+            # it renders for the uploader either way; see Drive_Images.share_in_domain).
+            shared = Drive_Images.share_in_domain(drive, file_id, Drive_Images.user_domain(drive))
+            url = Drive_Images.image_url(file_id)
+
+            worksheet = self._open_retro_worksheet(entry)
+            spreadsheet = worksheet.spreadsheet
+            row, time_col, issue_col, _retro_col = _locate_retro_row(worksheet.get_all_values())
+            timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+            worksheet.update([[timestamp]], rowcol_to_a1(row, time_col),
+                             value_input_option="USER_ENTERED")
+            Drive_Images.insert_image_in_cell(spreadsheet, worksheet, row, issue_col, url, img_w,
+                                              img_h)
+            logger.info("Image inserted into %r row %d (domain-shared=%s).",
+                        entry["worksheet_title"], row, shared)
+            self.after(0, lambda: self._image_insert_succeeded(win, entry, shared))
+        except Exception as e:  # noqa: BLE001 -- surfaced in the window
+            logger.exception("Image insert failed")
+            self.after(0, lambda err=e: win.finish_failure(f"Image insert failed: {err}"))
+
+    def _image_insert_succeeded(self, win, entry, shared):
+        """Main-thread: report success and, the first time an image lands in a given sheet, remind
+        the user about Google's one-time "Allow access" banner (which no API can grant)."""
+        if shared:
+            win.finish_success("Image inserted into the sheet.")
+        else:
+            win.finish_success("Image inserted (visible to you; couldn't share it to your "
+                               "domain, so teammates may see it broken — check the log).")
+        key = entry.get("spreadsheet_key")
+        acked = self.config.setdefault("ImageInsertAckedSheets", [])
+        if key and key not in acked:
+            acked.append(key)
+            self.save_config()
+            ImageBannerReminderWindow(self, sheet_url=entry.get("url"))
 
 
 #endregion

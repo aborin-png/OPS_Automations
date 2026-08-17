@@ -13,7 +13,6 @@ import config_migrate
 import customtkinter as ctk
 import glossary
 import logger_setup
-from afse_monitoring import AfseMonitoringMixin
 from config_editing import ConfigEditor
 from dialogs import (
     AddRobotWindow,
@@ -28,6 +27,7 @@ from git import InvalidGitRepositoryError, Repo
 from logger_setup import log_calls
 from Password_Management import robot_password
 from robot_detail import RobotDetailWindow
+from robot_monitoring import RobotMonitoringMixin
 from sheet_editor import SheetEditorMixin
 from Sheets_Automation import Sheets_editor, Zone_scanner
 
@@ -88,8 +88,9 @@ def find_or_seed_secrets(config_dir: Path.Path) -> Path.Path:
     password), so it can't live in the read-only PyInstaller bundle, nor inside the git clone (local
     edits would collide with the git auto-update pull). Instead we keep it beside the config file --
     a persistent, user-writable, outside-git location -- and copy the bundled seed
-    (robot_passwords.age + recipient.txt) there the first time. Existing files are never overwritten,
-    so passwords added locally survive app updates. Mirrors how find_config locates the config.
+    (robot_passwords.age + recipient.txt) there the first time. Existing files are never
+    overwritten, so passwords added locally survive app updates. Mirrors how find_config locates the
+    config.
     """
     live = config_dir / "secrets"
     seed = resource_path("secrets")  # baked into the exe (frozen) or the source secrets/ (dev)
@@ -127,13 +128,13 @@ DIVIDER_COLOR = glossary.DIVIDER_COLOR
 SUBTLE_TEXT = glossary.SUBTLE_TEXT
 
 
-class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
+class App(RobotMonitoringMixin, SheetEditorMixin, ctk.CTk):
 
     def __init__(self):
         super().__init__()
 
         # Runtime state (not configuration): robots currently unreachable, mutated as robots go
-        # on/offline. Shared by the AFSE + Sheet Editor mixins via self.
+        # on/offline. Shared by the Robot Monitoring + Sheet Editor mixins via self.
         self.robot_offline = []
 
         # Route exceptions raised inside Tk callbacks (button clicks, after() jobs, etc.)
@@ -182,7 +183,7 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
         self.build_main_area()
         self.build_sidebar()
 
-        self.build_afse_monitoring()
+        self.build_robot_monitoring()
         self.build_Sheet_Editor()
         self.build_config_editing()
 
@@ -616,67 +617,71 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
                                           fg_color="gray40", command=self.open_comment_window)
         self._comment_btn.grid(row=3, column=2, padx=(0, 12), pady=(0, 12), sticky="w")
 
+        self._image_btn = ctk.CTkButton(self.retro_frame, text="Add Image", state="disabled",
+                                        fg_color="gray40", command=self.open_image_window)
+        self._image_btn.grid(row=3, column=3, padx=(0, 12), pady=(0, 12), sticky="w")
+
         self.refresh_retro_controls()
 
 #endregion
 #----------------------------------------------------------------------------------------------------------------------------------------
-############################################################    AFSE MONITORING    ######################################################
+############################################################    ROBOT MONITORING    ######################################################
 #----------------------------------------------------------------------------------------------------------------------------------------
-#region AFSE Monitoring
+#region Robot Monitoring
 
-    def build_afse_monitoring(self):
-        afse_tab = self.tab_view.tab('AFSE Monitoring')
-        self._afse_cards = []
+    def build_robot_monitoring(self):
+        robot_tab = self.tab_view.tab('Robot Monitoring')
+        self._robot_cards = []
         self._robot_detail_windows = {}
-        self.afse_instances = []
+        self.robot_instances = []
         self.latest_robot_api = []
 
-        header = ctk.CTkFrame(afse_tab, fg_color="transparent")
+        header = ctk.CTkFrame(robot_tab, fg_color="transparent")
         header.pack(fill="x", padx=12, pady=(0, 6))
         ctk.CTkButton(header, text="+ Add Robot", width=120,
                       command=self._open_add_robot).pack(side="right")
         ctk.CTkButton(header, text="− Remove Robot", width=120, fg_color="gray40",
                       command=self._open_remove_robot).pack(side="right", padx=(0, 8))
 
-        self.afse_frame = ctk.CTkScrollableFrame(afse_tab, fg_color=PANEL_COLOR)
-        self.afse_frame.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        self.robot_frame = ctk.CTkScrollableFrame(robot_tab, fg_color=PANEL_COLOR)
+        self.robot_frame.pack(fill="both", expand=True, padx=12, pady=(0, 12))
 
         for col in range(ROBOT_CARD_COLS):
-            self.afse_frame.grid_columnconfigure(col, weight=1)
+            self.robot_frame.grid_columnconfigure(col, weight=1)
 
-        self._render_afse_cards(self.afse_fetch_data())
-        # Defer the first refresh onto the event loop. afse_schedule_refresh spawns a worker thread
+        self._render_robot_cards(self.fetch_robot_data())
+        # Defer the first refresh onto the event loop. schedule_robot_refresh spawns a worker thread
         # that calls self.after() when it finishes; kicking it off directly here (during __init__,
         # before mainloop) lets that thread hit .after() before the loop is running -> "main thread
         # is not in main loop". Scheduling it means the worker only starts once the loop is live.
-        self.after(0, self.afse_schedule_refresh)
+        self.after(0, self.schedule_robot_refresh)
 
-    def _render_afse_cards(self, robot_api):
-        """(Re)build the AFSE card grid from scratch.
+    def _render_robot_cards(self, robot_api):
+        """(Re)build the robot card grid from scratch.
 
         Used on first build and whenever the monitored robot count changes (e.g. a robot was added).
         """
-        for widget in self._afse_cards:
+        for widget in self._robot_cards:
             widget.destroy()
-        self._afse_cards = []
-        self.afse_instances = []
+        self._robot_cards = []
+        self.robot_instances = []
         self.latest_robot_api = robot_api or []
 
         if robot_api is None:
-            label = ctk.CTkLabel(self.afse_frame, text="Failed to fetch robot data.",
+            label = ctk.CTkLabel(self.robot_frame, text="Failed to fetch robot data.",
                                  text_color="red")
             label.grid(row=0, column=0, columnspan=ROBOT_CARD_COLS, pady=20)
-            self._afse_cards.append(label)
+            self._robot_cards.append(label)
             return
 
         for i, (name, charge, color_code, charge_code, zone_id) in enumerate(robot_api):
             status_color, status_label = STATUS_COLORS[color_code]
             charge_color, charge_status = CHARGE_STATUS[charge_code]
 
-            card = ctk.CTkFrame(self.afse_frame, fg_color=CARD_COLOR, corner_radius=8)
+            card = ctk.CTkFrame(self.robot_frame, fg_color=CARD_COLOR, corner_radius=8)
             card.grid(row=i // ROBOT_CARD_COLS, column=i % ROBOT_CARD_COLS, padx=8, pady=8,
                       sticky="nsew")
-            self._afse_cards.append(card)
+            self._robot_cards.append(card)
 
             ctk.CTkLabel(card, text=name,
                          font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(12, 4), padx=12)
@@ -701,7 +706,7 @@ class App(AfseMonitoringMixin, SheetEditorMixin, ctk.CTk):
                                       font=ctk.CTkFont(size=12))
             robot_zone.pack(pady=(0, 10))
 
-            self.afse_instances.append(
+            self.robot_instances.append(
                 [robot_charge, status_badge, robot_status, robot_charge_status, robot_zone])
             self._bind_card_click(card, i)
 

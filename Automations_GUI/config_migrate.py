@@ -3,7 +3,7 @@
 """Non-destructive config migration.
 
 When the user's Automation_GUI_Config.json is an older CONFIG_VERSION than the template, we used to
-overwrite it wholesale -- destroying any custom Sheet Options, the AFSE robot list, the RETRO
+overwrite it wholesale -- destroying any custom Sheet Options, the monitored robot list, the RETRO
 history, and their saved Settings. Instead we *merge*: the template supplies any keys the user is
 missing (new defaults), while the user's existing values win everywhere they already have one.
 

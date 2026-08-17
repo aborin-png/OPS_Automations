@@ -1,11 +1,11 @@
 # Boston Dynamics, Inc. Confidential Information.
 # Copyright 2026. All Rights Reserved.
-"""Behaviour / logic for the "AFSE Monitoring" tab.
+"""Behaviour / logic for the "Robot Monitoring" tab.
 
 This is a mixin whose methods become part of the App class (see UI_Handler.py). It holds only the
 tab's *functionality* -- polling each monitored robot's API, the periodic refresh loop, and adding
 / removing robots from the persisted config. The widgets (card grid, buttons, robot detail windows)
-are built and wired by ``App.build_afse_monitoring`` / ``_render_afse_cards`` / ``_open_*`` in
+are built and wired by ``App.build_robot_monitoring`` / ``_render_robot_cards`` / ``_open_*`` in
 UI_Handler.py, so every method here operates on ``self`` (the App instance).
 """
 import logging
@@ -23,11 +23,14 @@ ZONE_NAMES = glossary.ZONE_NAMES
 logger = logging.getLogger(logger_setup.LOGGER_NAME)
 
 
-class AfseMonitoringMixin:
-    """AFSE Monitoring tab logic. Mixed into App; relies on widgets built by build_afse_monitoring.
+class RobotMonitoringMixin:
+    """Robot Monitoring tab logic. Mixed into App; relies on widgets built by
+    build_robot_monitoring.
 
     Uses ``self.robot_offline`` (initialised in App.__init__) as the shared set of currently
-    unreachable robots, and ``self.save_config()`` to persist config changes.
+    unreachable robots, and ``self.save_config()`` to persist config changes. The monitored-robot
+    list is persisted under the legacy ``config['AFSE']`` key (kept as-is for backward compatibility
+    with existing user configs).
     """
 
     def get_robot_api(self):
@@ -58,19 +61,19 @@ class AfseMonitoringMixin:
 
         return robot_api
 
-    def afse_schedule_refresh(self):
-        threading.Thread(target=self.afse_refresh, daemon=True).start()
+    def schedule_robot_refresh(self):
+        threading.Thread(target=self.robot_refresh, daemon=True).start()
 
-    def afse_refresh(self):
-        robot_api = self.afse_fetch_data()
-        self.after(0, lambda: self.afse_apply_refresh(robot_api))
+    def robot_refresh(self):
+        robot_api = self.fetch_robot_data()
+        self.after(0, lambda: self.apply_robot_refresh(robot_api))
 
-    def afse_apply_refresh(self, robot_api):
+    def apply_robot_refresh(self, robot_api):
         if robot_api is not None:
             # The robot count changes when a robot is added (or first appears), so the
             # card grid has to be rebuilt; otherwise update the existing cards in place.
-            if len(robot_api) != len(self.afse_instances):
-                self._render_afse_cards(robot_api)
+            if len(robot_api) != len(self.robot_instances):
+                self._render_robot_cards(robot_api)
             else:
                 self.latest_robot_api = robot_api
                 for i, (name, charge, color_code, charge_code, zone_id) in enumerate(robot_api):
@@ -81,15 +84,16 @@ class AfseMonitoringMixin:
                     if win is not None and win.winfo_exists():
                         win.update_data(charge, color_code, charge_code, zone_id)
 
-                    self.afse_instances[i][0].configure(text=f'{charge:.0f}%')
-                    self.afse_instances[i][1].configure(fg_color=status_color)
-                    self.afse_instances[i][2].configure(text=status_label)
-                    self.afse_instances[i][3].configure(text=charge_status, text_color=charge_color)
+                    self.robot_instances[i][0].configure(text=f'{charge:.0f}%')
+                    self.robot_instances[i][1].configure(fg_color=status_color)
+                    self.robot_instances[i][2].configure(text=status_label)
+                    self.robot_instances[i][3].configure(text=charge_status,
+                                                         text_color=charge_color)
                     zone_text = ZONE_NAMES.get(zone_id, 'Not in a Zone')
-                    self.afse_instances[i][4].configure(text=zone_text)
-        self.after(5000, self.afse_schedule_refresh)
+                    self.robot_instances[i][4].configure(text=zone_text)
+        self.after(5000, self.schedule_robot_refresh)
 
-    def afse_fetch_data(self):
+    def fetch_robot_data(self):
         try:
             robot_api = self.get_robot_api()
         except Exception:
@@ -100,32 +104,33 @@ class AfseMonitoringMixin:
 
     @log_calls
     def _add_robot_to_config(self, name):
-        """Persist a new robot to the config's AFSE list and refresh the tab.
+        """Persist a new robot to the monitored-robot list (config['AFSE']) and refresh the tab.
 
         Runs on the main thread (invoked from AddRobotWindow after a successful reachability check).
         """
         self.config['AFSE']['Robots'].append(name)
         self.save_config()
-        self._reload_afse()
+        self._reload_robots()
 
     @log_calls
     def _remove_robot_from_config(self, name):
-        """Strip a robot from the config's AFSE list, persist, and refresh the tab."""
+        """Strip a robot from the monitored-robot list (config['AFSE']), persist, and refresh the
+        tab."""
         robots = self.config['AFSE']['Robots']
         if name in robots:
             robots.remove(name)
         if name in self.robot_offline:
             self.robot_offline.remove(name)
         self.save_config()
-        self._reload_afse()
+        self._reload_robots()
 
     @log_calls
-    def _reload_afse(self):
+    def _reload_robots(self):
         """One-shot fetch + re-render so a newly added robot shows immediately, without starting a
         second refresh loop (the existing 5s loop keeps running)."""
 
         def work():
-            robot_api = self.afse_fetch_data()
-            self.after(0, lambda: self._render_afse_cards(robot_api))
+            robot_api = self.fetch_robot_data()
+            self.after(0, lambda: self._render_robot_cards(robot_api))
 
         threading.Thread(target=work, daemon=True).start()

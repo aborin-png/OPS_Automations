@@ -7,13 +7,16 @@ These are the self-contained ``CTkToplevel`` dialogs the main App opens. Each ta
 from UI_Handler.py. See UI_Handler.py for the App that instantiates them.
 """
 import logging
+import os
 import threading
+from tkinter import filedialog
 
 import customtkinter as ctk
 import glossary
 import logger_setup
 from add_favorite import is_pinned, remove_from_favorites, save_to_favorites
 from browser_util import open_url
+from PIL import Image
 from Sheets_Automation import API_fetch
 
 # UI color alias (defined in glossary.py, single source of truth). See UI_Handler.py.
@@ -94,11 +97,13 @@ class SettingsWindow(ctk.CTkToplevel):
 class FavoritesWindow(ctk.CTkToplevel):
     """Pin / unpin the OPS Automations app to the GNOME dock.
 
-    "Add to Dock" writes a ``~/.local/share/applications/automation-gui.desktop`` launcher and adds it
-    to the GNOME ``favorite-apps`` list; "Remove from Dock" removes both (see add_favorite.py). Those
-    calls shell out to ``gsettings`` and are GNOME-specific, so any failure (e.g. a non-GNOME desktop)
-    is caught and shown in the status line rather than crashing the app. The buttons reflect the
-    current pin state.
+    This shares install.sh's ``ops-automations.desktop`` launcher, so it toggles the same dock entry
+    the right-click "pin to dock" would -- never a duplicate. "Add to Dock" adds the app to the GNOME
+    ``favorite-apps`` list (bootstrapping the shared launcher only if it doesn't already exist);
+    "Remove from Dock" just unpins it (the launcher/app-menu entry is left in place -- removing that
+    is uninstall.sh's job). See add_favorite.py. Those calls shell out to ``gsettings`` and are
+    GNOME-specific, so any failure (e.g. a non-GNOME desktop) is caught and shown in the status line
+    rather than crashing the app. The buttons reflect the current pin state.
     """
 
     def __init__(self, parent):
@@ -621,7 +626,7 @@ class AddRobotPasswordWindow(_ActionStatusMixin, ctk.CTkToplevel):
 
 
 class AddRobotWindow(ctk.CTkToplevel):
-    """Dialog for adding a robot to the AFSE monitoring list.
+    """Dialog for adding a robot to the Robot Monitoring list.
 
     Validates the name isn't a
     duplicate, confirms the robot is reachable, then hands the name off to `on_added`
@@ -702,7 +707,7 @@ class AddRobotWindow(ctk.CTkToplevel):
 
 
 class RemoveRobotWindow(ctk.CTkToplevel):
-    """Dialog for removing a robot from the AFSE monitoring list.
+    """Dialog for removing a robot from the Robot Monitoring list.
 
     Presents a dropdown of the
     currently monitored robots and hands the chosen name to `on_removed` (which strips it
@@ -803,8 +808,13 @@ class SheetLogWindow(ctk.CTkToplevel):
         self._entry.pack(pady=(0, 8))
         self._entry.bind("<Return>", lambda _e: self._submit())
 
-        self._status = ctk.CTkLabel(self, text="", text_color=SUBTLE_TEXT, wraplength=420,
-                                    justify="center")
+        # A retro fires its data-capturing retro-log the instant this window opens (the caller does
+        # so right after constructing it); reflect that immediately, and set_capture_result updates
+        # this line with the outcome. _capture_ok: None=pending, True=ok, False=failed.
+        self._capture_ok = None
+        initial_status = "Capturing retro data..." if kind == "retro" else ""
+        self._status = ctk.CTkLabel(self, text=initial_status, text_color=SUBTLE_TEXT,
+                                    wraplength=420, justify="center")
         self._status.pack(pady=(0, 8))
 
         btns = ctk.CTkFrame(self, fg_color="transparent")
@@ -825,10 +835,30 @@ class SheetLogWindow(ctk.CTkToplevel):
         self._submit_btn.configure(state="disabled")
         self._entry.configure(state="disabled")
         if self.kind == "retro":
-            self._status.configure(text="Sending retro...", text_color=SUBTLE_TEXT)
+            # The retro-log (data capture) already fired when this window opened; submit sends the
+            # message-bearing comment.
+            self._status.configure(text="Sending comment...", text_color=SUBTLE_TEXT)
         else:
             self._status.configure(text="Sending Comment...", text_color=SUBTLE_TEXT)
         self._on_submit(self, self._entry_var.get().strip())
+
+    def set_capture_result(self, ok: bool, error: str = ""):
+        """Report the outcome of the immediate retro-log capture (fired when this window opened).
+
+        Records it for the submit path (``_capture_ok``) and, as long as the user hasn't submitted
+        yet (``_working``), shows it in the status line. Guarded so a late-arriving result can't
+        clobber a 'Sending comment...' / success / failure message once submit is underway.
+        """
+        self._capture_ok = ok
+        if not self.winfo_exists() or self._working:
+            return
+        if ok:
+            self._status.configure(text="Retro data captured. Add a message, then Submit.",
+                                   text_color="#2E8B3A")
+        else:
+            self._status.configure(
+                text=f"Warning: retro data capture failed ({error}). You can still add a comment.",
+                text_color="#CC3333")
 
     def finish_success(self, message):
         if not self.winfo_exists():
@@ -847,3 +877,158 @@ class SheetLogWindow(ctk.CTkToplevel):
     def _safe_destroy(self):
         if self.winfo_exists():
             self.destroy()
+
+
+class ImageUploadWindow(ctk.CTkToplevel):
+    """Pick an image and insert it into the target worksheet's next Issue Description slot.
+
+    v1 is file-browser only: the dashed box previews the chosen image, and "Upload an Image" opens a
+    file picker (clipboard paste + drag-and-drop are planned follow-ups). ``on_submit(window, path)``
+    runs the Drive upload + sheet insert on a worker thread and drives ``finish_success`` /
+    ``finish_failure`` / ``finish_cancelled`` back on the main thread.
+    """
+
+    IMAGE_TYPES = [("Images", "*.png *.jpg *.jpeg *.gif *.bmp *.webp"), ("All files", "*.*")]
+
+    def __init__(self, parent, target_label, on_submit):
+        super().__init__(parent)
+        self.title("Add Image")
+        self.geometry("500x480")
+        self.resizable(False, False)
+        self.transient(parent)
+        self._on_submit = on_submit
+        self._image_path = None
+        self._preview = None  # keep a ref so Tk/CTk doesn't garbage-collect the CTkImage
+        self._working = False
+
+        ctk.CTkLabel(self, text="Add Image", font=ctk.CTkFont(size=16,
+                                                              weight="bold")).pack(pady=(20, 4))
+        ctk.CTkLabel(self, text=target_label, text_color=SUBTLE_TEXT, wraplength=460,
+                     justify="center").pack(pady=(0, 10))
+
+        # Dashed-ish preview / drop box (a bordered frame). v1 just previews the picked image.
+        self._box = ctk.CTkFrame(self, width=440, height=230, fg_color=("gray90", "gray17"),
+                                 border_width=2, border_color=SUBTLE_TEXT)
+        self._box.pack(pady=(0, 10), padx=20)
+        self._box.pack_propagate(False)
+        self._box_label = ctk.CTkLabel(self._box,
+                                       text="No image selected.\n\nClick “Upload an Image” below.",
+                                       text_color=SUBTLE_TEXT, justify="center")
+        self._box_label.pack(expand=True)
+
+        self._upload_btn = ctk.CTkButton(self, text="Upload an Image", width=160,
+                                         command=self._browse)
+        self._upload_btn.pack(pady=(0, 8))
+
+        self._status = ctk.CTkLabel(self, text="", text_color=SUBTLE_TEXT, wraplength=460,
+                                    justify="center")
+        self._status.pack(pady=(0, 6))
+
+        btns = ctk.CTkFrame(self, fg_color="transparent")
+        btns.pack(pady=(0, 14))
+        self._insert_btn = ctk.CTkButton(btns, text="Insert", width=120, state="disabled",
+                                         command=self._submit)
+        self._insert_btn.pack(side="left", padx=6)
+        ctk.CTkButton(btns, text="Cancel", width=120, fg_color="gray40",
+                      command=self.destroy).pack(side="left", padx=6)
+
+        self.wait_visibility()
+        self.grab_set()
+
+    def _browse(self):
+        path = filedialog.askopenfilename(parent=self, title="Select an image",
+                                          filetypes=self.IMAGE_TYPES)
+        if path:
+            self._set_image(path)
+
+    def _set_image(self, path):
+        try:
+            with Image.open(path) as img:
+                img.load()
+            preview = img.copy()
+            preview.thumbnail((420, 210))
+            self._preview = ctk.CTkImage(light_image=preview, dark_image=preview, size=preview.size)
+        except Exception as e:  # noqa: BLE001 -- unreadable / unsupported image file
+            self._image_path = None
+            self._insert_btn.configure(state="disabled")
+            self._status.configure(text=f"Couldn't read that image: {e}", text_color="#CC3333")
+            return
+        self._image_path = path
+        self._box_label.configure(image=self._preview, text="")
+        self._status.configure(text=os.path.basename(path), text_color=SUBTLE_TEXT)
+        self._insert_btn.configure(state="normal")
+
+    def _submit(self):
+        if self._working or not self._image_path:
+            return
+        self._working = True
+        self._insert_btn.configure(state="disabled")
+        self._upload_btn.configure(state="disabled")
+        self._status.configure(text="Uploading to Drive & inserting...", text_color=SUBTLE_TEXT)
+        self._on_submit(self, self._image_path)
+
+    def finish_success(self, message):
+        if not self.winfo_exists():
+            return
+        self._status.configure(text=message, text_color="#2E8B3A")
+        self.after(1500, self._safe_destroy)
+
+    def finish_failure(self, message):
+        if not self.winfo_exists():
+            return
+        self._working = False
+        self._insert_btn.configure(state="normal")
+        self._upload_btn.configure(state="normal")
+        self._status.configure(text=message, text_color="#CC3333")
+
+    def finish_cancelled(self, message="Cancelled."):
+        # Re-arm the window (same as a failure) so the user can retry or close.
+        self.finish_failure(message)
+
+    def _safe_destroy(self):
+        if self.winfo_exists():
+            self.destroy()
+
+
+class ImageBannerReminderWindow(ctk.CTkToplevel):
+    """One-time nudge, shown after the first image is inserted into a given sheet, about Google's
+    "Allow access" banner.
+
+    ``=IMAGE()`` is an external-data formula, so Sheets shows a yellow "Some formulas are trying to
+    send and receive data from external parties" banner and won't display images until the user
+    clicks "Allow access" -- a per-user, per-document consent no API can grant. This just reminds
+    them (once per sheet) and offers to open the sheet.
+    """
+
+    def __init__(self, parent, sheet_url=None):
+        super().__init__(parent)
+        self.title("One-time: allow images to display")
+        self.geometry("480x300")
+        self.resizable(False, False)
+        self.transient(parent)
+        self._sheet_url = sheet_url
+
+        ctk.CTkLabel(self, text="Allow images to display",
+                     font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(20, 8))
+        ctk.CTkLabel(
+            self, text=("This is the first image added to this sheet. Google Sheets shows a yellow "
+                        "“Some formulas are trying to send and receive data from external parties” "
+                        "banner and won’t display images until you click “Allow access”.\n\n"
+                        "Open the sheet and click Allow access once — Google remembers it for this "
+                        "sheet, so you won’t be asked again."), text_color=SUBTLE_TEXT,
+            wraplength=440, justify="left").pack(pady=(0, 14), padx=20)
+
+        btns = ctk.CTkFrame(self, fg_color="transparent")
+        btns.pack(pady=(0, 16))
+        if sheet_url:
+            ctk.CTkButton(btns, text="Open Sheet", width=130,
+                          command=self._open).pack(side="left", padx=6)
+        ctk.CTkButton(btns, text="Got it", width=120, fg_color="gray40",
+                      command=self.destroy).pack(side="left", padx=6)
+
+        self.wait_visibility()
+        self.grab_set()
+
+    def _open(self):
+        if self._sheet_url:
+            open_url(self._sheet_url)

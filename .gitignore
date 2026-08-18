@@ -16,7 +16,7 @@ Automations_GUI/secrets/*decrypted*
 # Temporary one-off bootstrap that re-introduces cookie scraping to seed the store; delete after use.
 Automations_GUI/password_collector.py
 
-Automations_GUI/UI_Handler.spec
+# Automations_GUI/UI_Handler.spec
 
 Automations_GUI/__pycache__
 Automations_GUI/build

@@ -107,9 +107,9 @@ password; build_camera_url picks the pair based on the zone's type (see ZONE_TYP
 '''
 
 # NVR IP address for CELL cameras. Affects: UI_Handler.py (build_camera_url).
-CAMERA_IP_CELL = "10.224.131.2"
+CAMERA_IP_CELL = "10.224.131.3"
 # NVR IP address for DOCK cameras. Affects: UI_Handler.py (build_camera_url).
-CAMERA_IP_DOCK = "10.224.131.7"
+CAMERA_IP_DOCK = "10.224.131.2"
 # Login username shared by both NVRs. Affects: UI_Handler.py (build_camera_url).
 CAMERA_USER = "admin"
 # Login password for the CELL NVR. Affects: UI_Handler.py (build_camera_url).
@@ -127,31 +127,31 @@ CAMERA_DEFAULT_CHANNEL = 1
 VIDEO_W, VIDEO_H = 640, 360
 
 CAMERA_CHANNELS = {  # robot Zone ID -> 1-based NVR channel number
-    203: 1,
-    106: 9,
-    111: 9,
-    205: 7,
-    206: 7,
-    214: 2,
-    200: 10,
-    207: 10,
-    201: 11,
-    208: 11,
-    202: 5,
-    209: 5,
-    213: 6,
-    211: 4,
+    203: 12,
+    106: 3,
+    111: 3,
+    205: 6,
+    206: 6,
+    214: 7,
+    200: 9,
+    207: 9,
+    201: 2,
+    208: 2,
+    202: 4,
+    209: 4,
+    213: 5,
+    211: 8,
     108: 1,
-    110: 3,
-    35: 9,
+    110: 1,
+    35: 14,
     32: 10,
     40: 6,
-    37: 8,
-    46: 1,
-    31: 1,
-    47: 3,
-    44: 3,
-    57: 5,
+    37: 13,
+    46: 3,
+    31: 3,
+    47: 9,
+    44: 9,
+    57: 1,
     50: 4,
     36: 9,
     62: 9
